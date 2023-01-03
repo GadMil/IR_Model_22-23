@@ -103,7 +103,7 @@ def search_anchor():
         NUMBER OF QUERY WORDS that appear in anchor text linking to the page.
         DO NOT use stemming. DO USE the staff-provided tokenizer from Assignment
         3 (GCP part) to do the tokenization and remove stopwords. For example,
-        a document with a anchor text that matches two distinct query words will
+        a document with an anchor text that matches two distinct query words will
         be ranked before a document with anchor text that matches only one
         distinct query word, regardless of the number of times the term appeared
         in the anchor text (or query).
@@ -122,6 +122,7 @@ def search_anchor():
     if len(query) == 0:
         return jsonify(res)
     # BEGIN SOLUTION
+    tokenized_query = tokenize(query)
 
     # END SOLUTION
     return jsonify(res)
