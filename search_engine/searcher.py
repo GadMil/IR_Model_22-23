@@ -4,10 +4,10 @@ import pickle
 class PageViews:
 
     def __init__(self):
-        self._page_views = None
-
-    def set_page_views(self, pv: str):
-        self._page_views = pv
+        self._page_views = 'pageviews-202108-user.pkl'
+    #
+    # def set_page_views(self, pv: str):
+    #     self._page_views = pv
 
     def get_page_views(self, wiki_ids: list) -> list:
         # read in the counter
@@ -23,10 +23,10 @@ class PageViews:
 class PageRanks:
 
     def __init__(self):
-        self._page_ranks = None
-
-    def set_page_ranks(self, pr: str):
-        self._page_ranks = pr
+        self._page_ranks = 'gs://information_retrieval_project/pr'
+    #
+    # def set_page_ranks(self, pr: str):
+    #     self._page_ranks = pr
 
     def get_page_ranks(self, wiki_ids: list) -> list:
         # read in the rdd
