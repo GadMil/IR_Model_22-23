@@ -11,13 +11,13 @@ gcloud auth list
 # check that the right project and zone are active
 gcloud config list
 # if not set them
-# gcloud config set project $PROJECT_NAME
-# gcloud config set compute/zone $ZONE
+ gcloud config set project $PROJECT_NAME
+ gcloud config set compute/zone $ZONE
 
 # 1. Set up public IP
 gcloud compute addresses create $IP_NAME --project=$PROJECT_NAME --region=$REGION
 gcloud compute addresses list
-# note the IP address printed above, that's your extrenal IP address.
+# note the IP address printed above, that's your external IP address.
 # Enter it here: 
 INSTANCE_IP=""
 

@@ -123,7 +123,14 @@ def search_anchor():
         return jsonify(res)
     # BEGIN SOLUTION
     tokenized_query = tokenize(query)
-
+    tokenized_query = rf.tokenize(query)
+    if len(tokenized_query) == 0:
+        return jsonify(res)
+    # words & posting lists of each index
+    words_anchor_text, pls_anchor_text = get_posting_gen(anchor_text_index, 'postings_gcp/index_anchor_text', tokenized_query)
+    sorted_docs_list = rf.get_documents_by_content(tokenized_query, anchor_text_index, words_anchor_text, pls_anchor_text)
+    for item in sorted_docs_list:
+        res.append((int(item[0]), title_index.doc_id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 

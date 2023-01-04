@@ -181,7 +181,7 @@ class InvertedIndex:
         posting_locs = defaultdict(list)
         bucket_id, list_w_pl = b_w_pl
 
-        with closing(MultiFileWriter("../Colab", bucket_id, bucket_name)) as writer:
+        with closing(MultiFileWriter(".", bucket_id, bucket_name)) as writer:
             for w, pl in list_w_pl:
                 # convert to bytes
                 b = b''.join([(doc_id << 16 | (tf & TF_MASK)).to_bytes(TUPLE_SIZE, 'big')
