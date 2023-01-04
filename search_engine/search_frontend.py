@@ -8,7 +8,6 @@ class MyFlaskApp(Flask):
 
 app = MyFlaskApp(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
-searcher = InvertedIndex()
 
 
 @app.route("/search")
