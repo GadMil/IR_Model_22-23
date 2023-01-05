@@ -1,4 +1,14 @@
 from flask import Flask, request, jsonify
+import searcher
+import body_inverted_index_gcp
+import title_inverted_index_gcp
+import anchor_inverted_index_gcp
+
+
+tokenizer = searcher.Tokenizer()
+body_index = body_inverted_index_gcp.InvertedIndex()
+title_index = title_inverted_index_gcp.InvertedIndex()
+anchor_index = anchor_inverted_index_gcp.InvertedIndex()
 
 
 class MyFlaskApp(Flask):
@@ -90,7 +100,10 @@ def search_title():
     if len(query) == 0:
         return jsonify(res)
     # BEGIN SOLUTION
-
+    query_tokens = tokenizer.tokenize(query)
+    if query_tokens:
+        docs_ranks = BinaryRanking(title_index).rank(query)
+        # TODO: return titles and ids
     # END SOLUTION
     return jsonify(res)
 
@@ -121,15 +134,10 @@ def search_anchor():
     if len(query) == 0:
         return jsonify(res)
     # BEGIN SOLUTION
-    tokenized_query = tokenize(query)
-    tokenized_query = rf.tokenize(query)
-    if len(tokenized_query) == 0:
-        return jsonify(res)
-    # words & posting lists of each index
-    words_anchor_text, pls_anchor_text = get_posting_gen(anchor_text_index, 'postings_gcp/index_anchor_text', tokenized_query)
-    sorted_docs_list = rf.get_documents_by_content(tokenized_query, anchor_text_index, words_anchor_text, pls_anchor_text)
-    for item in sorted_docs_list:
-        res.append((int(item[0]), title_index.doc_id_to_title.get(item[0], "")))
+    query_tokens = tokenizer.tokenize(query)
+    if query_tokens:
+        docs_ranks = BinaryRanking(anchor_index).rank(query)
+        # TODO: return titles and ids
     # END SOLUTION
     return jsonify(res)
 
