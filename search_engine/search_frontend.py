@@ -1,14 +1,15 @@
 from flask import Flask, request, jsonify
 import searcher
+from searcher import *
 import body_inverted_index_gcp
 import title_inverted_index_gcp
 import anchor_inverted_index_gcp
 
 
 tokenizer = searcher.Tokenizer()
-body_index = body_inverted_index_gcp.InvertedIndex()
-title_index = title_inverted_index_gcp.InvertedIndex()
-anchor_index = anchor_inverted_index_gcp.InvertedIndex()
+# body_index = body_inverted_index_gcp.InvertedIndex()
+# title_index = title_inverted_index_gcp.InvertedIndex()
+# anchor_index = anchor_inverted_index_gcp.InvertedIndex()
 
 
 class MyFlaskApp(Flask):
@@ -18,6 +19,19 @@ class MyFlaskApp(Flask):
 
 app = MyFlaskApp(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
+
+
+# read title index
+def get_index_from_storage(bucket, index_name):
+    blob = storage.Blob(f'title_postings_gcp/{index_name}.pkl', bucket)
+
+    with open(f'./{index_name}.pkl', "wb") as file_obj:
+        blob.download_to_file(file_obj)
+
+    return title_inverted_index_gcp.InvertedIndex.read_index("./", index_name)
+
+
+title_index = get_index_from_storage(bucket, 'title_index')
 
 
 @app.route("/search")
@@ -104,6 +118,7 @@ def search_title():
     if query_tokens:
         docs_ranks = BinaryRanking(title_index).rank(query)
         # TODO: return titles and ids
+        res = docs_ranks
     # END SOLUTION
     return jsonify(res)
 
