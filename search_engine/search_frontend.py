@@ -6,6 +6,8 @@ import title_inverted_index_gcp
 import anchor_inverted_index_gcp
 
 bucket_name = 'information_retrieval_project'
+client = storage.Client('academic-ivy-370514')
+bucket = client.bucket(bucket_name)
 
 tokenizer = searcher.Tokenizer()
 # body_index = body_inverted_index_gcp.InvertedIndex()
@@ -32,8 +34,7 @@ def get_index_from_storage(bucket, index_name):
     return title_inverted_index_gcp.InvertedIndex.read_index("./", index_name)
 
 
-title_index = get_index_from_storage(bucket_name, 'title_index')
-
+title_index = get_index_from_storage(bucket, 'title_index')
 
 @app.route("/search")
 def search():
