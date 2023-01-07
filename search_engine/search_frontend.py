@@ -5,6 +5,8 @@ import body_inverted_index_gcp
 import title_inverted_index_gcp
 import anchor_inverted_index_gcp
 
+from google.cloud import storage
+
 bucket_name = 'information_retrieval_project'
 client = storage.Client('academic-ivy-370514')
 bucket = client.bucket(bucket_name)
