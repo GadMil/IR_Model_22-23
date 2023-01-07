@@ -27,16 +27,18 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
 
 # read title index
-def get_index_from_storage(bucket, index_name):
-    blob = storage.Blob(f'title_postings_gcp/{index_name}.pkl', bucket)
+# def get_index_from_storage(bucket, index_name):
+#     blob = storage.Blob(f'title_postings_gcp/{index_name}.pkl', bucket)
+#
+#     with open(f'./{index_name}.pkl', "wb") as file_obj:
+#         blob.download_to_file(file_obj)
+#
+#     return title_inverted_index_gcp.InvertedIndex.read_index("./", index_name)
+#
+#
+# title_index = get_index_from_storage(bucket, 'title_index')
 
-    with open(f'./{index_name}.pkl', "wb") as file_obj:
-        blob.download_to_file(file_obj)
-
-    return title_inverted_index_gcp.InvertedIndex.read_index("./", index_name)
-
-
-title_index = get_index_from_storage(bucket, 'title_index')
+title_inverted_index_gcp.InvertedIndex().read_index('title_postings_gcp', 'title_index')
 
 @app.route("/search")
 def search():
@@ -120,7 +122,7 @@ def search_title():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryRanking(title_index).rank(query)
+        docs_ranks = BinaryRanking(title_index).rank(query_tokens)
         # TODO: return titles and ids
         res = docs_ranks
     # END SOLUTION
@@ -155,7 +157,7 @@ def search_anchor():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryRanking(anchor_index).rank(query)
+        docs_ranks = BinaryRanking(anchor_index).rank(query_tokens)
         # TODO: return titles and ids
     # END SOLUTION
     return jsonify(res)

@@ -97,7 +97,7 @@ def get_posting_iter(index):
 class Ranking:
     def __init__(self, index):
         self.index = index
-        self.words, self.pls = zip(*self.index.posting_lists_iter())
+        self.words, self.pls = get_posting_iter(index)
 
     @abstractmethod
     def rank(self, query_to_search):
