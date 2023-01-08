@@ -136,7 +136,7 @@ class BinaryRanking(Ranking):
         super().__init__(index)
 
     def rank(self, query_to_search):
-        return sorted(self.get_candidate_documents_and_scores(query_to_search), key=lambda x: x[1], reverse=True)
+        return sorted(self.get_candidate_documents_and_scores(query_to_search).items(), key=lambda x: x[1], reverse=True)
 
     def get_candidate_documents_and_scores(self, query_to_search):
         candidates = {}
