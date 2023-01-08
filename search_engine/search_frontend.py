@@ -38,8 +38,7 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 #
 # title_index = get_index_from_storage(bucket, 'title_index')
 
-title_index = title_inverted_index_gcp.InvertedIndex()
-title_index.read_index('title_postings_gcp', 'title_index')
+title_index = title_inverted_index_gcp.InvertedIndex.read_index('title_postings_gcp', 'title_index')
 
 
 @app.route("/search")
