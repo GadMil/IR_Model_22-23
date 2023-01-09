@@ -122,7 +122,6 @@ def search_title():
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
         docs_ranks = BinaryRanking(title_index).rank(query_tokens)
-        # Gad change-to verify and then copy for all
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
@@ -158,7 +157,8 @@ def search_anchor():
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
         docs_ranks = BinaryRanking(anchor_index).rank(query_tokens)
-        # TODO: return titles and ids
+        for item in docs_ranks:
+            res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 
