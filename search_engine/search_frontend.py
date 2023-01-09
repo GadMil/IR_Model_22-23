@@ -121,7 +121,7 @@ def search_title():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryRanking(title_index).rank(query_tokens)
+        docs_ranks = BinaryQuerySearcher(title_index).search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
@@ -156,7 +156,7 @@ def search_anchor():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryRanking(anchor_index).rank(query_tokens)
+        docs_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
