@@ -10,6 +10,7 @@ client = storage.Client('academic-ivy-370514')
 bucket = client.bucket(bucket_name)
 
 tokenizer = searcher.Tokenizer()
+
 body_index = inverted_index_gcp.InvertedIndex()
 title_index = inverted_index_gcp.InvertedIndex()
 anchor_index = inverted_index_gcp.InvertedIndex()
@@ -88,7 +89,11 @@ def search_body():
     if len(query) == 0:
         return jsonify(res)
     # BEGIN SOLUTION
-
+    query_tokens = tokenizer.tokenize(query)
+    if query_tokens:
+        docs_ranks = TfIdfQuerySearcher(body_index).search_query(query_tokens)
+        for item in docs_ranks:
+            res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 

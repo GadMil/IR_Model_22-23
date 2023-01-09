@@ -126,7 +126,7 @@ def cosine_similarity(D, Q):
     return result
 
 
-def get_top_n(sim_dict, N=3):
+def get_top_n(sim_dict, N=100):
     """
     Sort and return the highest N documents according to the cosine similarity score.
     Generate a dictionary of cosine similarity scores
@@ -243,7 +243,7 @@ class TfIdfQuerySearcher(QuerySearcher):
 
         for token in np.unique(query_to_search):
             if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
-                tf = counter[token] / len(query_to_search)  # term frequency divded by the length of the query
+                tf = counter[token] / len(query_to_search)  # term frequency divided by the length of the query
                 df = self.index.df[token]
                 idf = math.log((len(self.index.dl)) / (df + epsilon), 10)  # smoothing
 
@@ -314,12 +314,9 @@ class TfIdfQuerySearcher(QuerySearcher):
         # YOUR CODE HERE
         result = {}
 
-        for query_id, query in queries_to_search.items():
-            D = self.generate_document_tfidf_matrix(query)
-            Q = self.generate_query_tfidf_vector(query)
-            result[query_id] = get_top_n(cosine_similarity(D, Q), N)
-
-        return result
+        D = self.generate_document_tfidf_matrix(queries_to_search)
+        Q = self.generate_query_tfidf_vector(queries_to_search)
+        return get_top_n(cosine_similarity(D, Q), N)
 
 
 class BM25QuerySearcher(QuerySearcher):
