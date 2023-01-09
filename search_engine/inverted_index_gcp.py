@@ -86,9 +86,6 @@ class MultiFileReader:
         return False
 
 
-from collections import defaultdict
-from contextlib import closing
-
 TUPLE_SIZE = 6  # We're going to pack the doc_id and tf values in this
 # many bytes.
 TF_MASK = 2 ** 16 - 1  # Masking the 16 low bits of an integer
@@ -116,6 +113,14 @@ class InvertedIndex:
         # the number of bytes from the beginning of the file where the posting list
         # starts. 
         self.posting_locs = defaultdict(list)
+        # documents length map
+        self.dl = defaultdict()
+        # average length of the corpus's documents
+        self.avg_dl = 0
+        # corpus's dictionary size
+        self.number_of_terms = 0
+        # norm of the doc for later cosine similarity calculation
+        self.doc_id_to_norm = defaultdict()
 
         for doc_id, tokens in docs.items():
             self.add_doc(doc_id, tokens)
