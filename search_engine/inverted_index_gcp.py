@@ -118,7 +118,9 @@ class InvertedIndex:
         # average length of the corpus's documents
         self.avg_dl = 0
         # corpus's dictionary size
-        self.number_of_terms = 0
+        self.dictionary_size = 0
+        # number of documents in the corpus
+        self.corpus_size = 0
         # norm of the doc for later cosine similarity calculation
         self.doc_id_to_norm = defaultdict()
 
