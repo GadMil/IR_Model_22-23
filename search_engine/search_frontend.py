@@ -1,9 +1,7 @@
 from flask import Flask, request, jsonify
 import searcher
 from searcher import *
-import body_inverted_index_gcp
-import title_inverted_index_gcp
-import anchor_inverted_index_gcp
+import inverted_index_gcp
 
 from google.cloud import storage
 
@@ -12,9 +10,9 @@ client = storage.Client('academic-ivy-370514')
 bucket = client.bucket(bucket_name)
 
 tokenizer = searcher.Tokenizer()
-# body_index = body_inverted_index_gcp.InvertedIndex()
-# title_index = title_inverted_index_gcp.InvertedIndex()
-# anchor_index = anchor_inverted_index_gcp.InvertedIndex()
+body_index = inverted_index_gcp.InvertedIndex()
+title_index = inverted_index_gcp.InvertedIndex()
+anchor_index = inverted_index_gcp.InvertedIndex()
 
 
 class MyFlaskApp(Flask):
@@ -38,7 +36,7 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 #
 # title_index = get_index_from_storage(bucket, 'title_index')
 
-title_index = title_inverted_index_gcp.InvertedIndex.read_index('title_postings_gcp', 'title_index')
+title_index = inverted_index_gcp.InvertedIndex.read_index('title_postings_gcp', 'title_index')
 
 
 @app.route("/search")
@@ -124,8 +122,9 @@ def search_title():
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
         docs_ranks = BinaryRanking(title_index).rank(query_tokens)
-        # TODO: return titles and ids
-        res = docs_ranks
+        # Gad change-to verify and then copy for all
+        for item in docs_ranks:
+            res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 
