@@ -37,7 +37,10 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 #
 # title_index = get_index_from_storage(bucket, 'title_index')
 
-title_index = inverted_index_gcp.InvertedIndex.read_index('title_postings_gcp', 'title_index')
+blob = storage.Blob('postings_gcp_title/title_index.pkl', bucket)
+with open('./title_index.pkl', "wb") as file_obj:
+    blob.download_to_file(file_obj)
+title_index = inverted_index_gcp.InvertedIndex.read_index('./', 'title_index')
 
 
 @app.route("/search")
