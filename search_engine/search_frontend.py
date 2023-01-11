@@ -23,6 +23,20 @@ app = MyFlaskApp(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
 
+def read_global_page_views(file_name):
+    blob = storage.Blob(f'{file_name}.pkl', bucket)
+    with open(f'./{file_name}.pkl', "wb") as file_obj:
+        blob.download_to_file(file_obj)
+    page_views.read_page_views()
+
+
+def read_global_page_ranks(file_name):
+    blob = storage.Blob(f'{file_name}.pkl', bucket)
+    with open(f'./{file_name}.pkl', "wb") as file_obj:
+        blob.download_to_file(file_obj)
+    page_ranks.read_page_ranks()
+
+
 def get_index(index_name, directory):
     blob = storage.Blob(f'{directory}/{index_name}.pkl', bucket)
     with open(f'./{index_name}.pkl', "wb") as file_obj:
@@ -45,10 +59,15 @@ body_index = get_index('body_index', 'postings_gcp_body')
 title_index = get_index('title_index', 'postings_gcp_title')
 anchor_index = get_index('anchor_index', 'postings_gcp_anchor')
 
-
 download_bin_files(body_index)
 download_bin_files(title_index)
 download_bin_files(anchor_index)
+
+page_views = PageViews()
+page_ranks = PageRanks()
+
+page_views.read_page_views()
+page_ranks.read_page_ranks()
 
 
 @app.route("/search")
@@ -74,7 +93,16 @@ def search():
     if len(query) == 0:
         return jsonify(res)
     # BEGIN SOLUTION
+    query_tokens = tokenizer.tokenize(query)
+    if query_tokens:
+        body_ranks = BM25QuerySearcher(body_index).search_query(query_tokens)
+        title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
+        merged_ranks = merge_results(title_ranks, body_ranks)
+        page_views_scores = page_views.get_page_views(list(merged_ranks.keys()))
+        page_ranks_scores = page_ranks.get_page_ranks(list(merged_ranks.keys()))
 
+        for item in docs_ranks:
+            res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 
@@ -137,7 +165,7 @@ def search_title():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryQuerySearcher(title_index, "postings_gcp_title").search_query(query_tokens)
+        docs_ranks = BinaryQuerySearcher(title_index).search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
@@ -172,7 +200,7 @@ def search_anchor():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryQuerySearcher(anchor_index, "postings_gcp_anchor").search_query(query_tokens)
+        docs_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
@@ -200,7 +228,7 @@ def get_pagerank():
     if len(wiki_ids) == 0:
         return jsonify(res)
     # BEGIN SOLUTION
-    res = searcher.get_page_ranks(wiki_ids)
+    res = page_ranks.get_page_ranks(wiki_ids)
     # END SOLUTION
     return jsonify(res)
 
@@ -228,7 +256,7 @@ def get_pageview():
     if len(wiki_ids) == 0:
         return jsonify(res)
     # BEGIN SOLUTION
-    res = searcher.get_page_views(wiki_ids)
+    res = page_views.get_page_views(wiki_ids)
     # END SOLUTION
     return jsonify(res)
 

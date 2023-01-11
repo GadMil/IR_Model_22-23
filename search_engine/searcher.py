@@ -24,32 +24,36 @@ class PageViews:
 
     def __init__(self):
         self._page_views = 'pageviews-202108-user.pkl'
+        self.pvCounter = {}
 
-    def get_page_views(self, wiki_ids: list) -> list:
+    def read_page_views(self):
         # read in the counter
         try:
             with open(self._page_views, 'rb') as file:
-                pvCounter = pickle.loads(file.read())
+                self.pvCounter = pickle.loads(file.read())
         except OSError:
             return []
 
-        return [pvCounter[wiki_id] if wiki_id in pvCounter else 0 for wiki_id in wiki_ids]
+    def get_page_views(self, wiki_ids: list) -> list:
+        return [self.pvCounter[wiki_id] if wiki_id in self.pvCounter else 0 for wiki_id in wiki_ids]
 
 
 class PageRanks:
 
     def __init__(self):
         self._page_ranks = 'gs://information_retrieval_project/pr'
+        self.prDF = None
 
-    def get_page_ranks(self, wiki_ids: list) -> list:
+    def read_page_ranks(self):
         # read in the rdd
         try:
             with open(self._page_ranks, 'rb') as file:
-                prDF = pickle.loads(file.read())
+                self.prDF = pickle.loads(file.read())
         except OSError:
             return []
 
-        relevant_ids = prDF[prDF[0].isin(wiki_ids)]
+    def get_page_ranks(self, wiki_ids: list) -> list:
+        relevant_ids = self.prDF[self.prDF[0].isin(wiki_ids)]
         relevant_ids_rank = {row[1][0]: row[1][1] for row in relevant_ids.itterrows()}
         return [relevant_ids_rank[wiki_id] if wiki_id in relevant_ids_rank else 0 for wiki_id in wiki_ids]
 
@@ -418,7 +422,7 @@ class BM25QuerySearcher(QuerySearcher):
         return score
 
 
-def merge_results(title_scores, body_scores, title_weight=0.5, text_weight=0.5, N=3):
+def merge_results(title_scores, body_scores, title_weight=0.3, text_weight=0.7, N=100):
     """
     This function merge and sort documents retrieved by its weighted score (e.g., title and body).
     Parameters:
@@ -444,15 +448,3 @@ def merge_results(title_scores, body_scores, title_weight=0.5, text_weight=0.5, 
             merged_scores[doc] = score * text_weight
 
     return sorted(merged_scores, key=lambda x: x[1], reverse=True)[:min(N, len(merged_scores))]
-
-
-page_views = PageViews()
-page_ranks = PageRanks()
-
-
-def get_page_views(wiki_ids: list):
-    return page_views.get_page_views(wiki_ids)
-
-
-def get_page_ranks(wiki_ids: list):
-    return page_ranks.get_page_ranks(wiki_ids)
