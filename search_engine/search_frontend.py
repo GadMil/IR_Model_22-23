@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, request, jsonify
 import searcher
 from searcher import *
@@ -41,6 +43,14 @@ blob = storage.Blob('postings_gcp_title/title_index.pkl', bucket)
 with open('./title_index.pkl', "wb") as file_obj:
     blob.download_to_file(file_obj)
 title_index = inverted_index_gcp.InvertedIndex.read_index('./', 'title_index')
+
+os.makedirs(f'./postings_gcp_title', exist_ok=True)
+blobs = client.list_blobs(bucket_name, prefix=f'postings_gcp_title')
+
+for blob in blobs:
+    if blob.name.endswith('.bin'):
+        with open(f'./{blob.name}', "wb") as file_obj:
+            blob.download_to_file(file_obj)
 
 
 @app.route("/search")
@@ -129,7 +139,7 @@ def search_title():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryQuerySearcher(title_index).search_query(query_tokens)
+        docs_ranks = BinaryQuerySearcher(title_index, "postings_gcp_title").search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
@@ -164,7 +174,7 @@ def search_anchor():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
+        docs_ranks = BinaryQuerySearcher(anchor_index, "postings_gcp_anchor").search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
