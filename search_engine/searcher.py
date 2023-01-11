@@ -85,7 +85,7 @@ class Tokenizer:
         return list_of_tokens
 
 
-def get_posting_iter(index, directory):
+def get_posting_iter(index):
     """
     This function returning the iterator working with posting list.
 
@@ -93,7 +93,7 @@ def get_posting_iter(index, directory):
     ----------
     index: inverted index
     """
-    words, pls = zip(*index.posting_lists_iter(directory))
+    words, pls = zip(*index.posting_lists_iter())
     return words, pls
 
 
@@ -149,9 +149,9 @@ def get_top_n(sim_dict, N=100):
 
 
 class QuerySearcher:
-    def __init__(self, index: InvertedIndex, directory):
+    def __init__(self, index: InvertedIndex):
         self.index = index
-        self.words, self.pls = get_posting_iter(index, directory)
+        self.words, self.pls = get_posting_iter(index)
 
     @abstractmethod
     def search_query(self, query_to_search):
@@ -160,8 +160,8 @@ class QuerySearcher:
 
 class BinaryQuerySearcher(QuerySearcher):
 
-    def __init__(self, index, directory):
-        super().__init__(index, directory)
+    def __init__(self, index):
+        super().__init__(index)
 
     def search_query(self, query_to_search):
         return sorted(self.get_candidate_documents_and_scores(query_to_search).items(), key=lambda x: x[1],
