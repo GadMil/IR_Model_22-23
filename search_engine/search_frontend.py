@@ -13,10 +13,6 @@ bucket = client.bucket(bucket_name)
 
 tokenizer = searcher.Tokenizer()
 
-body_index = inverted_index_gcp.InvertedIndex()
-title_index = inverted_index_gcp.InvertedIndex()
-anchor_index = inverted_index_gcp.InvertedIndex()
-
 
 class MyFlaskApp(Flask):
     def run(self, host=None, port=None, debug=None, **options):
@@ -43,6 +39,16 @@ def download_bin_files(index):
         if blob.name.endswith('.bin'):
             with open(f'./{blob.name}', "wb") as file_obj:
                 blob.download_to_file(file_obj)
+
+
+body_index = get_index('body_index', 'postings_gcp_body')
+title_index = get_index('title_index', 'postings_gcp_title')
+anchor_index = get_index('anchor_index', 'postings_gcp_anchor')
+
+
+download_bin_files(body_index)
+download_bin_files(title_index)
+download_bin_files(anchor_index)
 
 
 @app.route("/search")
