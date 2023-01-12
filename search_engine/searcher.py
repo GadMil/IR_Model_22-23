@@ -369,7 +369,7 @@ class BM25QuerySearcher(QuerySearcher):
             else:
                 pass
 
-    def search_query(self, query, N=100):
+    def search_query(self, query, N=200):
         """
          This function calculate the bm25 score for given query and document.
          We need to check only documents which are 'candidates' for a given query.
@@ -422,7 +422,7 @@ class BM25QuerySearcher(QuerySearcher):
         return score
 
 
-def merge_results(title_scores, body_scores, title_weight=0.3, text_weight=0.7, N=100):
+def merge_results(title_scores, body_scores, title_weight=0.3, text_weight=0.7, N=200):
     """
     This function merge and sort documents retrieved by its weighted score (e.g., title and body).
     Parameters:
