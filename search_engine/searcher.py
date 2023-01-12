@@ -23,7 +23,7 @@ nltk.download('stopwords')
 class PageViews:
 
     def __init__(self):
-        self._page_views = 'pageviews-202108-user.pkl'
+        self._page_views = 'views_ranks/pageviews-202108-user.pkl'
         self.pvCounter = {}
 
     def read_page_views(self):
@@ -41,7 +41,7 @@ class PageViews:
 class PageRanks:
 
     def __init__(self):
-        self._page_ranks = 'gs://information_retrieval_project/pr'
+        self._page_ranks = 'views_ranks/part-00000-562c3bda-ffab-4c73-944f-08aa804bf5db-c000.csv.gz'
         self.prDF = None
 
     def read_page_ranks(self):

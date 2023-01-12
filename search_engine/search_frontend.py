@@ -37,37 +37,42 @@ def read_global_page_ranks(file_name):
     page_ranks.read_page_ranks()
 
 
-def get_index(index_name, directory):
-    blob = storage.Blob(f'{directory}/{index_name}.pkl', bucket)
-    with open(f'./{index_name}.pkl', "wb") as file_obj:
-        blob.download_to_file(file_obj)
-    index = inverted_index_gcp.InvertedIndex.read_index('./', index_name)
-    index.directory = directory
+# def get_index(index_name, directory):
+#     blob = storage.Blob(f'{directory}/{index_name}.pkl', bucket)
+#     with open(f'./{index_name}.pkl', "wb") as file_obj:
+#         blob.download_to_file(file_obj)
+#     index = inverted_index_gcp.InvertedIndex.read_index('./', index_name)
+#     index.directory = directory
+#     return index
+
+
+# def download_bin_files(index):
+#     os.makedirs(f'./{index.directory}', exist_ok=True)
+#     blobs = client.list_blobs(bucket_name, prefix=f'{index.directory}')
+#     for blob in blobs:
+#         if blob.name.endswith('.bin'):
+#             with open(f'./{blob.name}', "wb") as file_obj:
+#                 blob.download_to_file(file_obj)
+
+def get_index(index_name, bins_folder):
+    index = inverted_index_gcp.InvertedIndex.read_index('indices/', index_name)
+    index.directory = bins_folder
     return index
 
 
-def download_bin_files(index):
-    os.makedirs(f'./{index.directory}', exist_ok=True)
-    blobs = client.list_blobs(bucket_name, prefix=f'{index.directory}')
-    for blob in blobs:
-        if blob.name.endswith('.bin'):
-            with open(f'./{blob.name}', "wb") as file_obj:
-                blob.download_to_file(file_obj)
+body_index = get_index('body_index', 'body_bins')
+title_index = get_index('title_index', 'title_bins')
+anchor_index = get_index('anchor_index', 'anchor_bins')
 
-
-body_index = get_index('body_index', 'postings_gcp_body')
-title_index = get_index('title_index', 'postings_gcp_title')
-anchor_index = get_index('anchor_index', 'postings_gcp_anchor')
-
-download_bin_files(body_index)
-download_bin_files(title_index)
-download_bin_files(anchor_index)
+# download_bin_files(body_index)
+# download_bin_files(title_index)
+# download_bin_files(anchor_index)
 
 page_views = PageViews()
 page_ranks = PageRanks()
 
 page_views.read_page_views()
-page_ranks.read_page_ranks()
+# page_ranks.read_page_ranks()
 
 
 @app.route("/search")
@@ -100,7 +105,7 @@ def search():
         merged_ranks = merge_results(title_ranks, body_ranks)
         page_views_scores = page_views.get_page_views(list(merged_ranks.keys()))
         page_ranks_scores = page_ranks.get_page_ranks(list(merged_ranks.keys()))
-
+        docs_ranks = {}
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
