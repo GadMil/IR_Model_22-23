@@ -65,11 +65,11 @@ class MultiFileReader:
     def __init__(self):
         self._open_files = {}
 
-    def read(self, locs, n_bytes):
+    def read(self, directory, locs, n_bytes):
         b = []
         for f_name, offset in locs:
             if f_name not in self._open_files:
-                self._open_files[f_name] = open(os.path.join(self.directory, f_name), 'rb')
+                self._open_files[f_name] = open(os.path.join(directory, f_name), 'rb')
             f = self._open_files[f_name]
             f.seek(offset)
             n_read = min(n_bytes, BLOCK_SIZE - offset)
@@ -99,6 +99,7 @@ class InvertedIndex:
           docs: dict mapping doc_id to list of tokens
         """
         # stores document frequency per term
+        self.directory = ''
         self.df = Counter()
         # stores total frequency per term
         self.term_total = Counter()
@@ -163,7 +164,7 @@ class InvertedIndex:
         """
         with closing(MultiFileReader()) as reader:
             for w, locs in self.posting_locs.items():
-                b = reader.read(locs, self.df[w] * TUPLE_SIZE)
+                b = reader.read(self.directory, locs, self.df[w] * TUPLE_SIZE)
                 posting_list = []
                 for i in range(self.df[w]):
                     doc_id = int.from_bytes(b[i * TUPLE_SIZE:i * TUPLE_SIZE + 4], 'big')
