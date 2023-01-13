@@ -162,19 +162,21 @@ class InvertedIndex:
         del state['_posting_list']
         return state
 
-    def posting_lists_iter(self):
+    def posting_lists_iter(self, query):
         """ A generator that reads one posting list from disk and yields 
             a (word:str, [(doc_id:int, tf:int), ...]) tuple.
         """
         with closing(MultiFileReader()) as reader:
-            for w, locs in self.posting_locs.items():
-                b = reader.read(self.directory, locs, self.df[w] * TUPLE_SIZE)
+            for term in query:
                 posting_list = []
-                for i in range(self.df[w]):
-                    doc_id = int.from_bytes(b[i * TUPLE_SIZE:i * TUPLE_SIZE + 4], 'big')
-                    tf = int.from_bytes(b[i * TUPLE_SIZE + 4:(i + 1) * TUPLE_SIZE], 'big')
-                    posting_list.append((doc_id, tf))
-                yield w, posting_list
+                if term in self.posting_locs:
+                    locs = self.posting_locs[term]
+                    b = reader.read(self.directory, locs, self.df[term] * TUPLE_SIZE)
+                    for i in range(self.df[term]):
+                        doc_id = int.from_bytes(b[i * TUPLE_SIZE:i * TUPLE_SIZE + 4], 'big')
+                        tf = int.from_bytes(b[i * TUPLE_SIZE + 4:(i + 1) * TUPLE_SIZE], 'big')
+                        posting_list.append((doc_id, tf))
+                    yield term, posting_list
 
     @staticmethod
     def read_index(base_dir, name):

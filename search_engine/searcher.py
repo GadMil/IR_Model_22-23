@@ -89,7 +89,7 @@ class Tokenizer:
         return list_of_tokens
 
 
-def get_posting_iter(index):
+def get_posting_iter(index, query):
     """
     This function returning the iterator working with posting list.
 
@@ -97,7 +97,7 @@ def get_posting_iter(index):
     ----------
     index: inverted index
     """
-    words, pls = zip(*index.posting_lists_iter())
+    words, pls = zip(*index.posting_lists_iter(query))
     return words, pls
 
 
@@ -153,9 +153,9 @@ def get_top_n(sim_dict, N=100):
 
 
 class QuerySearcher:
-    def __init__(self, index: InvertedIndex):
+    def __init__(self, index: InvertedIndex, query):
         self.index = index
-        self.words, self.pls = get_posting_iter(index)
+        self.words, self.pls = get_posting_iter(index, query)
 
     @abstractmethod
     def search_query(self, query_to_search):
@@ -164,8 +164,8 @@ class QuerySearcher:
 
 class BinaryQuerySearcher(QuerySearcher):
 
-    def __init__(self, index):
-        super().__init__(index)
+    def __init__(self, index, query):
+        super().__init__(index, query)
 
     def search_query(self, query_to_search):
         return sorted(self.get_candidate_documents_and_scores(query_to_search).items(), key=lambda x: x[1],
@@ -186,8 +186,8 @@ class BinaryQuerySearcher(QuerySearcher):
 
 
 class TfIdfQuerySearcher(QuerySearcher):
-    def __init__(self, index):
-        super().__init__(index)
+    def __init__(self, index, query):
+        super().__init__(index, query)
 
     def get_candidate_documents_and_scores(self, query_to_search):
         """
@@ -341,8 +341,8 @@ class BM25QuerySearcher(QuerySearcher):
         Inverse Document Frequency per term.
     """
 
-    def __init__(self, index, tf=None, k1=1.5, b=0.75):
-        super().__init__(index)
+    def __init__(self, index, query, tf=None, k1=1.5, b=0.75):
+        super().__init__(index, query)
         self.b = b
         self.k1 = k1
         self.tf_ = tf
