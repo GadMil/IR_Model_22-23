@@ -316,7 +316,7 @@ class TfIdfQuerySearcher(QuerySearcher):
 
         D = self.generate_document_tfidf_matrix(queries_to_search)
         Q = self.generate_query_tfidf_vector(queries_to_search)
-        return get_top_n(cosine_similarity(D, Q), N)
+        return get_top_n(cosine_similarity(self.index, D, Q), N)
 
 
 class BM25QuerySearcher(QuerySearcher):
