@@ -107,10 +107,22 @@ def search():
         body_ranks = BM25QuerySearcher(body_index).search_query(query_tokens)
         title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
         merged_ranks = merge_results(title_ranks, body_ranks)
-        page_views_scores = page_views.get_page_views(list(merged_ranks.keys()))
-        page_ranks_scores = page_ranks.get_page_ranks(list(merged_ranks.keys()))
-        docs_ranks = {}
-        for item in docs_ranks:
+        anchor_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
+        # page_views_scores = page_views.get_page_views(list(merged_ranks.keys()))
+        # page_ranks_scores = page_ranks.get_page_ranks(list(merged_ranks.keys()))
+
+        doc_ranks = defaultdict(int)
+        i = 0
+        for doc_id, bm25Rank in merged_ranks:
+            doc_ranks[doc_id] += (2 * bm25Rank * page_views.pvCounter[doc_id]) / (
+                        bm25Rank + page_views.pvCounter[doc_id])
+            doc_ranks[doc_id] *= 3 * anchor_ranks[i]
+            i += 1
+
+        doc_ranks = sorted([(doc_id, rank) for doc_id, rank in doc_ranks.items()], key=lambda x: x[1], reverse=True)[
+                    :100]
+
+        for item in doc_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
