@@ -241,19 +241,19 @@ class TfIdfQuerySearcher(QuerySearcher):
         vectorized query with tfidf scores
         """
         epsilon = .0000001
-        total_vocab_size = len(self.index.term_total)
-        Q = np.zeros(total_vocab_size)
-        term_vector = list(self.index.term_total.keys())
+        unique_q_terms = list(np.unique(query_to_search))
+        q_size = len(query_to_search)
+        Q = np.zeros(len(unique_q_terms))
         counter = Counter(query_to_search)
 
-        for token in np.unique(query_to_search):
+        for token in unique_q_terms:
             if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
-                tf = counter[token] / len(query_to_search)  # term frequency divided by the length of the query
+                tf = counter[token] / q_size  # term frequency divided by the length of the query
                 df = self.index.df[token]
                 idf = math.log((len(self.index.dl)) / (df + epsilon), 10)  # smoothing
 
                 try:
-                    ind = term_vector.index(token)
+                    ind = unique_q_terms.index(token)
                     Q[ind] = tf * idf
                 except:
                     pass
@@ -281,15 +281,15 @@ class TfIdfQuerySearcher(QuerySearcher):
         DataFrame of tfidf scores.
         """
 
-        total_vocab_size = len(self.index.term_total)
         # No need to utilize all documents, only those having corresponding terms with the query.
+        unique_q_terms = np.unique(query_to_search)
         candidates_scores = self.get_candidate_documents_and_scores(query_to_search)
         unique_candidates = np.unique([doc_id for doc_id, freq in candidates_scores.keys()])
-        D = np.zeros((len(unique_candidates), total_vocab_size))
+        D = np.zeros((len(unique_candidates), len(unique_q_terms)))
         D = pd.DataFrame(D)
 
         D.index = unique_candidates
-        D.columns = self.index.term_total.keys()
+        D.columns = unique_q_terms
 
         for key in candidates_scores:
             tfidf = candidates_scores[key]
