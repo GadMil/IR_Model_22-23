@@ -64,6 +64,10 @@ body_index = get_index('body_index', 'body_bins')
 title_index = get_index('title_index', 'title_bins')
 anchor_index = get_index('anchor_index', 'anchor_bins')
 
+title_bqs = BinaryQuerySearcher(title_index)
+anchor_bqs = BinaryQuerySearcher(anchor_index)
+body_tiqs = TfIdfQuerySearcher(body_index)
+
 # download_bin_files(body_index)
 # download_bin_files(title_index)
 # download_bin_files(anchor_index)
@@ -135,7 +139,7 @@ def search_body():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = TfIdfQuerySearcher(body_index).search_query(query_tokens)
+        docs_ranks = body_tiqs.search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
@@ -170,7 +174,7 @@ def search_title():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryQuerySearcher(title_index).search_query(query_tokens)
+        docs_ranks = title_bqs.search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
@@ -205,7 +209,7 @@ def search_anchor():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
+        docs_ranks = anchor_bqs.search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
