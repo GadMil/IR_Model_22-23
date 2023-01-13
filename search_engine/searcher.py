@@ -101,7 +101,7 @@ def get_posting_iter(index):
     return words, pls
 
 
-def cosine_similarity(D, Q):
+def cosine_similarity(index, D, Q):
     """
     Calculate the cosine similarity for each candidate document in D and a given query (e.g., Q).
     Generate a dictionary of cosine similarity scores
@@ -118,14 +118,14 @@ def cosine_similarity(D, Q):
     -----------
     dictionary of cosine similarity score as follows:
                                                                 key: document id (e.g., doc_id)
-                                                                value: cosine similarty score.
+                                                                value: cosine similarly score.
     """
     # YOUR CODE HERE
     result = {}
 
     for doc_id, scores in D.iterrows():
         s = np.array(scores)
-        result[doc_id] = np.dot(s, Q) / (np.linalg.norm(s) * np.linalg.norm(Q))
+        result[doc_id] = np.dot(s, Q) / (index.doc_norm[doc_id] * np.linalg.norm(Q))
 
     return result
 
@@ -210,10 +210,7 @@ class TfIdfQuerySearcher(QuerySearcher):
         for term in np.unique(query_to_search):
             if term in self.words:
                 list_of_doc = self.pls[self.words.index(term)]
-                # Changed (freq / self.index.dl[str(doc_id)])
-                normalized_tfidf = [(doc_id, (freq / self.index.dl[doc_id]) *
-                                     math.log(len(self.index.dl) / self.index.df[term], 10)) for doc_id, freq in
-                                    list_of_doc]
+                normalized_tfidf = [(doc_freq[0], self.index.tfidf[doc_freq[0]][term]) for doc_freq in list_of_doc]
 
                 for doc_id, tfidf in normalized_tfidf:
                     candidates[(doc_id, term)] = candidates.get((doc_id, term), 0) + tfidf
@@ -240,20 +237,18 @@ class TfIdfQuerySearcher(QuerySearcher):
         -----------
         vectorized query with tfidf scores
         """
-        epsilon = .0000001
-        total_vocab_size = len(self.index.term_total)
-        Q = np.zeros(total_vocab_size)
-        term_vector = list(self.index.term_total.keys())
+        unique_q_terms = list(np.unique(query_to_search))
+        q_size = len(query_to_search)
+        Q = np.zeros(len(unique_q_terms))
         counter = Counter(query_to_search)
 
-        for token in np.unique(query_to_search):
+        for token in unique_q_terms:
             if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
-                tf = counter[token] / len(query_to_search)  # term frequency divided by the length of the query
-                df = self.index.df[token]
-                idf = math.log((len(self.index.dl)) / (df + epsilon), 10)  # smoothing
+                tf = counter[token] / q_size  # term frequency divided by the length of the query
+                idf = self.index.idf[token]
 
                 try:
-                    ind = term_vector.index(token)
+                    ind = unique_q_terms.index(token)
                     Q[ind] = tf * idf
                 except:
                     pass
@@ -281,15 +276,15 @@ class TfIdfQuerySearcher(QuerySearcher):
         DataFrame of tfidf scores.
         """
 
-        total_vocab_size = len(self.index.term_total)
         # No need to utilize all documents, only those having corresponding terms with the query.
+        unique_q_terms = np.unique(query_to_search)
         candidates_scores = self.get_candidate_documents_and_scores(query_to_search)
         unique_candidates = np.unique([doc_id for doc_id, freq in candidates_scores.keys()])
-        D = np.zeros((len(unique_candidates), total_vocab_size))
+        D = np.zeros((len(unique_candidates), len(unique_q_terms)))
         D = pd.DataFrame(D)
 
         D.index = unique_candidates
-        D.columns = self.index.term_total.keys()
+        D.columns = unique_q_terms
 
         for key in candidates_scores:
             tfidf = candidates_scores[key]

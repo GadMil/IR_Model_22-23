@@ -98,9 +98,13 @@ class InvertedIndex:
         -----------
           docs: dict mapping doc_id to list of tokens
         """
-        # stores document frequency per term
         self.directory = ''
+        # stores document frequency per term
         self.df = Counter()
+        # stores inverted document frequency per term
+        self.idf = Counter()
+        # stores tfidf per term
+        self.tfidf = Counter()
         # stores total frequency per term
         self.term_total = Counter()
         # stores posting list per term while building the index (internally), 
@@ -123,7 +127,7 @@ class InvertedIndex:
         # number of documents in the corpus
         self.corpus_size = 0
         # norm of the doc for later cosine similarity calculation
-        self.doc_id_to_norm = defaultdict()
+        self.doc_norm = defaultdict()
 
         for doc_id, tokens in docs.items():
             self.add_doc(doc_id, tokens)
