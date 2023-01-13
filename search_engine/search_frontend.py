@@ -6,6 +6,7 @@ from searcher import *
 import inverted_index_gcp
 
 from google.cloud import storage
+import gensim.downloader
 
 bucket_name = 'information_retrieval_project'
 client = storage.Client('academic-ivy-370514')
@@ -36,23 +37,6 @@ def read_global_page_ranks(file_name):
         blob.download_to_file(file_obj)
     page_ranks.read_page_ranks()
 
-
-# def get_index(index_name, directory):
-#     blob = storage.Blob(f'{directory}/{index_name}.pkl', bucket)
-#     with open(f'./{index_name}.pkl', "wb") as file_obj:
-#         blob.download_to_file(file_obj)
-#     index = inverted_index_gcp.InvertedIndex.read_index('./', index_name)
-#     index.directory = directory
-#     return index
-
-
-# def download_bin_files(index):
-#     os.makedirs(f'./{index.directory}', exist_ok=True)
-#     blobs = client.list_blobs(bucket_name, prefix=f'{index.directory}')
-#     for blob in blobs:
-#         if blob.name.endswith('.bin'):
-#             with open(f'./{blob.name}', "wb") as file_obj:
-#                 blob.download_to_file(file_obj)
 
 def get_index(index_name, bins_folder):
     index = inverted_index_gcp.InvertedIndex.read_index('indices/', index_name)

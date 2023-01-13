@@ -312,8 +312,6 @@ class TfIdfQuerySearcher(QuerySearcher):
                                                         value: list of pairs in the following format:(doc_id, score).
         """
         # YOUR CODE HERE
-        result = {}
-
         D = self.generate_document_tfidf_matrix(queries_to_search)
         Q = self.generate_query_tfidf_vector(queries_to_search)
         return get_top_n(cosine_similarity(self.index, D, Q), N)
@@ -356,7 +354,6 @@ class BM25QuerySearcher(QuerySearcher):
         query: list of token representing the query.
         """
         # YOUR CODE HERE
-
         for term in query:
             if term not in self.idf and self.index.df.get(term):
                 freq = self.index.df[term]
