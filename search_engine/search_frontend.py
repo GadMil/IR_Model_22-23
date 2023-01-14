@@ -89,7 +89,7 @@ def search():
         body_ranks = BM25QuerySearcher(body_index, query_tokens).search_query(query_tokens)
         title_ranks = BM25QuerySearcher(title_index, query_tokens).search_query(query_tokens)
         merged_ranks = merge_results(title_ranks, body_ranks)
-        anchor_ranks = BinaryQuerySearcher(anchor_index, query_tokens).search_query(query_tokens)
+        anchor_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
         # page_views_scores = page_views.get_page_views(list(merged_ranks.keys()))
         # page_ranks_scores = page_ranks.get_page_ranks(list(merged_ranks.keys()))
 
@@ -133,7 +133,7 @@ def search_body():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = TfIdfQuerySearcher(body_index, query_tokens).search_query(query_tokens)
+        docs_ranks = TfIdfQuerySearcher(body_index).search_query(query_tokens)
         for item in docs_ranks:
             res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
@@ -168,9 +168,10 @@ def search_title():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryQuerySearcher(title_index, query_tokens).search_query(query_tokens)
-        for item in docs_ranks:
-            res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
+        docs_ranks = BinaryQuerySearcher(title_index).search_query(query_tokens)
+        res = [(id, title_index.id_to_title.get(id, "")) for id in docs_ranks]
+        # for item in docs_ranks:
+        #     res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 
@@ -203,9 +204,10 @@ def search_anchor():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        docs_ranks = BinaryQuerySearcher(anchor_index, query_tokens).search_query(query_tokens)
-        for item in docs_ranks:
-            res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
+        docs_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
+        res = [(id, title_index.id_to_title.get(id, "")) for id in docs_ranks]
+        # for item in docs_ranks:
+        #     res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 

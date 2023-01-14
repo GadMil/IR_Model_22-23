@@ -153,9 +153,10 @@ def get_top_n(sim_dict, N=100):
 
 
 class QuerySearcher:
-    def __init__(self, index: InvertedIndex, query):
+    def __init__(self, index: InvertedIndex):
         self.index = index
-        self.words, self.pls = get_posting_iter(index, query)
+        # self.words, self.pls = get_posting_iter(index, query)
+        self.words, self.pls = None, None
 
     @abstractmethod
     def search_query(self, query_to_search):
@@ -164,12 +165,24 @@ class QuerySearcher:
 
 class BinaryQuerySearcher(QuerySearcher):
 
-    def __init__(self, index, query):
-        super().__init__(index, query)
+    def __init__(self, index):
+        super().__init__(index)
 
     def search_query(self, query_to_search):
-        return sorted(self.get_candidate_documents_and_scores(query_to_search).items(), key=lambda x: x[1],
-                      reverse=True)
+        # tokens = word_tokenize(query.lower())
+        out = {}
+        for token in query_to_search:
+            try:
+                res = self.index.read_posting_list(token)
+                for doc_id, amount in res:
+                    try:
+                        out[doc_id] += 1
+                    except:
+                        out[doc_id] = 1
+            except Exception as e:
+                print("Index error, couldn't find term - ", e)
+
+        return sorted(out, key=out.get, reverse=True)
 
     def get_candidate_documents_and_scores(self, query_to_search):
         candidates = {}
@@ -186,8 +199,8 @@ class BinaryQuerySearcher(QuerySearcher):
 
 
 class TfIdfQuerySearcher(QuerySearcher):
-    def __init__(self, index, query):
-        super().__init__(index, query)
+    def __init__(self, index):
+        super().__init__(index)
 
     def get_candidate_documents_and_scores(self, query_to_search):
         """
@@ -238,15 +251,20 @@ class TfIdfQuerySearcher(QuerySearcher):
         -----------
         vectorized query with tfidf scores
         """
-        unique_q_terms = list(np.unique(query_to_search))
+        # unique_q_terms = list(np.unique(query_to_search))
         q_size = len(query_to_search)
-        Q = np.zeros(len(unique_q_terms))
+        # Q = np.zeros(len(unique_q_terms))
+        sim_q = {}
         counter = Counter(query_to_search)
 
-        for token in unique_q_terms:
+        for token, count in counter.items():
             if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
-                tf = counter[token] / q_size  # term frequency divided by the length of the query
-                idf = self.index.idf[token]
+                for doc_id, tf in self.index.read_posting_list(token):
+                    if doc_id == 0:
+                        continue
+                    tfidf = tf / q_size * self.index.idf[token]
+                    if doc_id in sim_q:
+                        sim_q[doc_id] += count * tfidf
 
                 try:
                     ind = unique_q_terms.index(token)
@@ -340,8 +358,8 @@ class BM25QuerySearcher(QuerySearcher):
         Inverse Document Frequency per term.
     """
 
-    def __init__(self, index, query, tf=None, k1=1.5, b=0.75):
-        super().__init__(index, query)
+    def __init__(self, index, tf=None, k1=1.5, b=0.75):
+        super().__init__(index)
         self.b = b
         self.k1 = k1
         self.tf_ = tf
