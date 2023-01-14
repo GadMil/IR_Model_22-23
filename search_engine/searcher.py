@@ -210,7 +210,8 @@ class TfIdfQuerySearcher(QuerySearcher):
         for term in np.unique(query_to_search):
             if term in self.words:
                 list_of_doc = self.pls[self.words.index(term)]
-                normalized_tfidf = [(doc_freq[0], self.index.tfidf[doc_freq[0]][term]) for doc_freq in list_of_doc]
+                # normalized_tfidf = [(doc_freq[0], self.index.tfidf[doc_freq[0]][term]) for doc_freq in list_of_doc]
+                normalized_tfidf = [(doc, freq / self.index.dl[doc] * self.index.idf[term]) for doc, freq in list_of_doc]
 
                 for doc_id, tfidf in normalized_tfidf:
                     candidates[(doc_id, term)] = candidates.get((doc_id, term), 0) + tfidf
