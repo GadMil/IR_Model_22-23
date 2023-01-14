@@ -102,11 +102,13 @@ class InvertedIndex:
         # stores document frequency per term
         self.df = Counter()
         # stores inverted document frequency per term
-        self.idf = Counter()
+        self.idf = defaultdict()
         # stores tfidf per term
-        self.tfidf = Counter()
+        # self.tfidf = Counter()
         # stores total frequency per term
         self.term_total = Counter()
+        # stores similar words for each word
+        self.term_similar_score = defaultdict(list)
         # stores posting list per term while building the index (internally), 
         # otherwise too big to store in memory.
         self._posting_list = defaultdict(list)
