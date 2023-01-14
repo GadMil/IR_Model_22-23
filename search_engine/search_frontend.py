@@ -58,6 +58,7 @@ page_ranks = PageRanks()
 page_views.read_page_views()
 # page_ranks.read_page_ranks()
 
+word2vec_glove = gensim.downloader.load('glove-wiki-gigaword-50')
 
 @app.route("/search")
 def search():
@@ -84,6 +85,7 @@ def search():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
+        query_tokens = expand_query(query_tokens, word2vec_glove)
         body_ranks = BM25QuerySearcher(body_index, query_tokens).search_query(query_tokens)
         title_ranks = BM25QuerySearcher(title_index, query_tokens).search_query(query_tokens)
         merged_ranks = merge_results(title_ranks, body_ranks)

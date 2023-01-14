@@ -441,3 +441,18 @@ def merge_results(title_scores, body_scores, title_weight=0.3, text_weight=0.7, 
             merged_scores[doc] = score * text_weight
 
     return sorted(merged_scores, key=lambda x: x[1], reverse=True)[:min(N, len(merged_scores))]
+
+
+def get_similar_words(term, model):
+    try:
+        similars = model.most_similar(term, topn=3)
+    except:
+        similars = []
+    return similars
+
+
+def expand_query(tokens, model):
+    query = tokens
+    for tok in tokens:
+        query.append(get_similar_words(tok, model))
+    return query
