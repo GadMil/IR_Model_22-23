@@ -421,11 +421,12 @@ def get_similar_words(term, model):
     return similars
 
 
-def expand_query(tokens, model):
+def expand_query(tokens, model, index):
     query = []
     query.extend(tokens)
     for tok in tokens:
-        similars = get_similar_words(tok, model)
-        for w in similars:
-            query.append(w[0])
+        if index.term_total[tok] < 2:
+            similars = get_similar_words(tok, model)
+            for w in similars:
+                query.append(w[0])
     return query
