@@ -10,6 +10,7 @@ import numpy as np
 from nltk.corpus import stopwords
 import hashlib
 import heapq
+import gzip
 
 from inverted_index_gcp import InvertedIndex
 
@@ -48,8 +49,8 @@ class PageRanks:
     def read_page_ranks(self):
         # read in the rdd
         try:
-            with open(self._page_ranks, 'rb') as file:
-                self.prDF = pickle.loads(file.read())
+            with gzip.open(self._page_ranks, 'rb') as file:
+                self.prDF = pd.read_csv(file)
         except OSError:
             return []
 
@@ -228,8 +229,8 @@ class TfIdfQuerySearcher(QuerySearcher):
         counter = Counter(query_to_search)
 
         for token, count in counter.items():
-            q_vector.append(count * self.index.idf[token] / q_size)
             if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
+                q_vector.append(count * self.index.idf[token] / q_size)
                 for doc_id, doc_tf in self.index.read_posting_list(token):
                     if doc_id == 0:
                         continue
@@ -309,28 +310,29 @@ class BM25QuerySearcher(QuerySearcher):
          score: float, bm25 score.
          """
         # YOUR CODE HERE
-        candidates = set()
+        q_vector = []
+        q_size = len(query)
+        sim_dict = {}
+        counter = Counter(query)
 
-        # for term in np.unique(query):
-        #     if term in self.words:
-        #         candidates.update(doc_freq[0] for doc_freq in self.pls[self.words.index(term)])
+        for token, count in counter.items():
+            if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
+                q_vector.append(count * self.index.idf[token] / q_size)
+                for doc_id, doc_tf in self.index.read_posting_list(token):
+                    if doc_id == 0:
+                        continue
+                    if doc_id in sim_dict.keys():
+                        sim_dict[doc_id] += self._score(token, count, doc_id)
+                    else:
+                        sim_dict[doc_id] = self._score(token, count, doc_id)
 
-        out = {}
-        for token in query:
-            try:
-                res = self.index.read_posting_list(token)
-                for doc_id, amount in res:
-                    try:
-                        out[doc_id] += 1
-                    except:
-                        out[doc_id] = 1
-            except Exception as e:
-                print("Index error, couldn't find term - ", e)
+        if len(sim_dict) < N:
+            return get_top_n(sim_dict, N)
+        heap = [(bm25, doc_id) for doc_id, bm25 in sim_dict.items()]
+        top_n = heapq.nlargest(N, heap)
+        return [(doc_id, bm25) for bm25, doc_id in sorted(top_n, reverse=True)]
 
-        return sorted([(doc_id, self._score(query, doc_id)) for doc_id in candidates], key=lambda x: x[1],
-                      reverse=True)[:min(N, self.index.corpus_size)]
-
-    def _score(self, query, doc_id):
+    def _score(self, term, tf, doc_id):
         """
         This function calculate the bm25 score for given query and document.
         Parameters:
@@ -342,16 +344,9 @@ class BM25QuerySearcher(QuerySearcher):
         score: float, bm25 score.
         """
         # YOUR CODE HERE
-        score = 0.0
-
-        for term in query:
-            term_frequencies = dict(self.pls[self.words.index(term)])
-
-            if doc_id in term_frequencies.keys():
-                freq = term_frequencies[doc_id]
-                numerator = self.index.idf[term] * freq * (self.k1 + 1)
-                denominator = freq + self.k1 * (1 - self.b + self.b * self.index.dl[doc_id] / self.index.avg_dl)
-                score += (numerator / denominator)
+        numerator = self.index.idf[term] * tf * (self.k1 + 1)
+        denominator = tf + self.k1 * (1 - self.b + self.b * self.index.dl[doc_id] / self.index.avg_dl)
+        score = (numerator / denominator)
 
         return score
 

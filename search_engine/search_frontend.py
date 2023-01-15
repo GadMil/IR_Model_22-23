@@ -48,15 +48,11 @@ body_index = get_index('body_index', 'body_bins')
 title_index = get_index('title_index', 'title_bins')
 anchor_index = get_index('anchor_index', 'anchor_bins')
 
-# download_bin_files(body_index)
-# download_bin_files(title_index)
-# download_bin_files(anchor_index)
-
 page_views = PageViews()
 page_ranks = PageRanks()
 
 page_views.read_page_views()
-# page_ranks.read_page_ranks()
+page_ranks.read_page_ranks()
 
 word2vec_glove = gensim.downloader.load('glove-wiki-gigaword-50')
 
@@ -86,8 +82,8 @@ def search():
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
         query_tokens = expand_query(query_tokens, word2vec_glove)
-        body_ranks = BM25QuerySearcher(body_index, query_tokens).search_query(query_tokens)
-        title_ranks = BM25QuerySearcher(title_index, query_tokens).search_query(query_tokens)
+        body_ranks = BM25QuerySearcher(body_index).search_query(query_tokens)
+        title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
         merged_ranks = merge_results(title_ranks, body_ranks)
         anchor_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
         # page_views_scores = page_views.get_page_views(list(merged_ranks.keys()))
