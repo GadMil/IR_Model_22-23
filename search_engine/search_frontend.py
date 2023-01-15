@@ -87,10 +87,11 @@ def search():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        query_tokens = expand_query(query_tokens, word2vec_glove)
+        # query_tokens = expand_query(query_tokens, word2vec_glove)
         body_ranks = BM25QuerySearcher(body_index).search_query(query_tokens)
         title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
-        merged_ranks = merge_results(title_ranks, body_ranks)
+        anchor_ranks = BM25QuerySearcher(anchor_index).search_query(query_tokens)
+        merged_ranks = merge_results(title_ranks, body_ranks, anchor_ranks)
         for item in merged_ranks:
             res.append((int(item[0])))
 
