@@ -376,7 +376,7 @@ def merge_results(title_scores, body_scores, title_weight=0.3, text_weight=0.7, 
         else:
             merged_scores[doc] = score * text_weight
 
-    return sorted(merged_scores, key=lambda x: x[1], reverse=True)[:min(N, len(merged_scores))]
+    return sorted(merged_scores.items(), key=lambda x: x[1], reverse=True)[:min(N, len(merged_scores))]
 
 
 def get_similar_words(term, model):
