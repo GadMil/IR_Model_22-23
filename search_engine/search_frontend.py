@@ -87,7 +87,7 @@ def search():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        # query_tokens = expand_query(query_tokens, word2vec_glove)
+        query_tokens = expand_query(query_tokens, word2vec_glove, title_index)
         body_ranks = BM25QuerySearcher(body_index).search_query(query_tokens)
         title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
         anchor_ranks = BM25QuerySearcher(anchor_index).search_query(query_tokens)
