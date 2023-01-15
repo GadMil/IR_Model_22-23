@@ -379,7 +379,7 @@ class BM25QuerySearcher(QuerySearcher):
         return score
 
 
-def merge_results(title_scores, body_scores, title_weight=0.31, text_weight=0.74, N=200):
+def merge_results(title_scores, anchor_scores, body_scores, title_weight=0.7, anchor_weight=0.3, text_weight=0.3, N=200):
     """
     This function merge and sort documents retrieved by its weighted score (e.g., title and body).
     Parameters:
@@ -403,6 +403,12 @@ def merge_results(title_scores, body_scores, title_weight=0.31, text_weight=0.74
             merged_scores[doc] += score * text_weight
         else:
             merged_scores[doc] = score * text_weight
+
+    for doc, score in anchor_scores:
+        if merged_scores.get(doc):
+            merged_scores[doc] += score * anchor_weight
+        else:
+            merged_scores[doc] = score * anchor_weight
 
     return sorted(merged_scores.items(), key=lambda x: x[1], reverse=True)[:min(N, len(merged_scores))]
 
