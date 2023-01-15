@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 from nltk.corpus import stopwords
 import hashlib
+import heapq
 
 from inverted_index_gcp import InvertedIndex
 
@@ -148,7 +149,7 @@ def get_top_n(sim_dict, N=100):
     a ranked list of pairs (doc_id, score) in the length of N.
     """
 
-    return sorted([(doc_id, round(score, 5)) for doc_id, score in sim_dict.items()], key=lambda x: x[1], reverse=True)[
+    return sorted([doc_id for doc_id, score in sim_dict.items()], key=lambda x: x[1], reverse=True)[
            :N]
 
 
@@ -202,117 +203,7 @@ class TfIdfQuerySearcher(QuerySearcher):
     def __init__(self, index):
         super().__init__(index)
 
-    def get_candidate_documents_and_scores(self, query_to_search):
-        """
-        Generate a dictionary representing a pool of candidate documents for a given query. This function will go
-        through every token in query_to_search and fetch the corresponding information (e.g., term frequency,
-        document frequency, etc.') needed to calculate TF-IDF from the posting list. Then it will populate the
-        dictionary 'candidates.' For calculation of IDF, use log with base 10. tf will be normalized based on the
-        length of the document.
-        Parameters:
-        -----------
-        query_to_search: list of tokens (str). This list will be preprocessed in advance (e.g., lower case, filtering
-        stopwords, etc.').
-        Returns:
-        -----------
-        dictionary of candidates. In the following format:
-                                                                   key: pair (doc_id,term)
-                                                                   value: tfidf score.
-        """
-        candidates = {}
-        for term in np.unique(query_to_search):
-            if term in self.words:
-                list_of_doc = self.pls[self.words.index(term)]
-                # normalized_tfidf = [(doc_freq[0], self.index.tfidf[doc_freq[0]][term]) for doc_freq in list_of_doc]
-                normalized_tfidf = [(doc, freq / self.index.dl[doc] * self.index.idf[term]) for doc, freq in list_of_doc]
-
-                for doc_id, tfidf in normalized_tfidf:
-                    candidates[(doc_id, term)] = candidates.get((doc_id, term), 0) + tfidf
-
-        return candidates
-
-    def generate_query_tfidf_vector(self, query_to_search):
-        """
-        Generate a vector representing the query. Each entry within this vector represents a tfidf score.
-        The terms representing the query will be the unique terms in the index.
-
-        We will use tfidf on the query as well.
-        For calculation of IDF, use log with base 10.
-        tf will be normalized based on the length of the query.
-
-        Parameters:
-        -----------
-        query_to_search: list of tokens (str).
-                            This list will be preprocessed in advance (e.g., lower case, filtering stopwords, etc.').
-
-        index:           inverted index loaded from the corresponding files.
-
-        Returns:
-        -----------
-        vectorized query with tfidf scores
-        """
-        # unique_q_terms = list(np.unique(query_to_search))
-        q_size = len(query_to_search)
-        # Q = np.zeros(len(unique_q_terms))
-        sim_q = {}
-        counter = Counter(query_to_search)
-
-        for token, count in counter.items():
-            if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
-                for doc_id, tf in self.index.read_posting_list(token):
-                    if doc_id == 0:
-                        continue
-                    tfidf = tf / q_size * self.index.idf[token]
-                    if doc_id in sim_q:
-                        sim_q[doc_id] += count * tfidf
-
-                try:
-                    ind = unique_q_terms.index(token)
-                    Q[ind] = tf * idf
-                except:
-                    pass
-        return Q
-
-    def generate_document_tfidf_matrix(self, query_to_search):
-        """
-        Generate a DataFrame `D` of tfidf scores for a given query.
-        Rows will be the documents candidates for a given query
-        Columns will be the unique terms in the index.
-        The value for a given document and term will be its tfidf score.
-
-        Parameters:
-        -----------
-        query_to_search: list of tokens (str). This list will be preprocessed in advance (e.g.,
-        lower case, filtering stopwords, etc.').
-
-        index:
-        inverted index loaded from the corresponding files.
-
-        words,pls: iterator for working with posting.
-
-        Returns:
-        -----------
-        DataFrame of tfidf scores.
-        """
-
-        # No need to utilize all documents, only those having corresponding terms with the query.
-        unique_q_terms = np.unique(query_to_search)
-        candidates_scores = self.get_candidate_documents_and_scores(query_to_search)
-        unique_candidates = np.unique([doc_id for doc_id, freq in candidates_scores.keys()])
-        D = np.zeros((len(unique_candidates), len(unique_q_terms)))
-        D = pd.DataFrame(D)
-
-        D.index = unique_candidates
-        D.columns = unique_q_terms
-
-        for key in candidates_scores:
-            tfidf = candidates_scores[key]
-            doc_id, term = key
-            D.loc[doc_id][term] = tfidf
-
-        return D
-
-    def search_query(self, queries_to_search, N=100):
+    def search_query(self, query_to_search, N=100):
         """
         Generate a dictionary that gathers for every query its topN score.
 
@@ -331,9 +222,32 @@ class TfIdfQuerySearcher(QuerySearcher):
                                                         value: list of pairs in the following format:(doc_id, score).
         """
         # YOUR CODE HERE
-        D = self.generate_document_tfidf_matrix(queries_to_search)
-        Q = self.generate_query_tfidf_vector(queries_to_search)
-        return get_top_n(cosine_similarity(self.index, D, Q), N)
+        q_vector = []
+        q_size = len(query_to_search)
+        sim_dict = {}
+        counter = Counter(query_to_search)
+
+        for token, count in counter.items():
+            q_vector.append(count * self.index.idf[token] / q_size)
+            if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
+                for doc_id, doc_tf in self.index.read_posting_list(token):
+                    if doc_id == 0:
+                        continue
+                    tfidf = doc_tf * self.index.idf[token]
+                    if doc_id in sim_dict.keys():
+                        sim_dict[doc_id] += count * tfidf
+                    else:
+                        sim_dict[doc_id] = count * tfidf
+
+        for doc_id in sim_dict.keys():
+            sim_dict[doc_id] = sim_dict[doc_id] * (1/(self.index.doc_norm[doc_id] * np.linalg.norm(q_vector))) *\
+                               (1/self.index.dl[doc_id])
+
+        if len(sim_dict) < N:
+            return get_top_n(sim_dict, N)
+        heap = [(tfidf, doc_id) for doc_id, tfidf in sim_dict.items()]
+        top_n = heapq.nlargest(N, heap)
+        return [doc_id for tfidf, doc_id in sorted(top_n, reverse=True)]
 
 
 class BM25QuerySearcher(QuerySearcher):
@@ -358,27 +272,26 @@ class BM25QuerySearcher(QuerySearcher):
         Inverse Document Frequency per term.
     """
 
-    def __init__(self, index, tf=None, k1=1.5, b=0.75):
+    def __init__(self, index, k1=1.5, b=0.75):
         super().__init__(index)
         self.b = b
         self.k1 = k1
-        self.tf_ = tf
-        self.idf = defaultdict()
 
-    def calc_idf(self, query):
-        """
-        This function calculate the idf values according to the BM25 idf formula for each term in the query.
-        Parameters:
-        -----------
-        query: list of token representing the query.
-        """
-        # YOUR CODE HERE
-        for term in query:
-            if term not in self.idf and self.index.df.get(term):
-                freq = self.index.df[term]
-                self.idf[term] = math.log((self.index.corpus_size - freq + 0.5) / (freq + 0.5))
-            else:
-                pass
+
+    # def calc_idf(self, query):
+    #     """
+    #     This function calculate the idf values according to the BM25 idf formula for each term in the query.
+    #     Parameters:
+    #     -----------
+    #     query: list of token representing the query.
+    #     """
+    #     # YOUR CODE HERE
+    #     for term in query:
+    #         if term not in self.idf and self.index.df.get(term):
+    #             freq = self.index.df[term]
+    #             self.idf[term] = math.log((self.index.corpus_size - freq + 0.5) / (freq + 0.5))
+    #         else:
+    #             pass
 
     def search_query(self, query, N=200):
         """
@@ -396,12 +309,23 @@ class BM25QuerySearcher(QuerySearcher):
          score: float, bm25 score.
          """
         # YOUR CODE HERE
-        self.calc_idf(query)
         candidates = set()
 
-        for term in np.unique(query):
-            if term in self.words:
-                candidates.update(doc_freq[0] for doc_freq in self.pls[self.words.index(term)])
+        # for term in np.unique(query):
+        #     if term in self.words:
+        #         candidates.update(doc_freq[0] for doc_freq in self.pls[self.words.index(term)])
+
+        out = {}
+        for token in query:
+            try:
+                res = self.index.read_posting_list(token)
+                for doc_id, amount in res:
+                    try:
+                        out[doc_id] += 1
+                    except:
+                        out[doc_id] = 1
+            except Exception as e:
+                print("Index error, couldn't find term - ", e)
 
         return sorted([(doc_id, self._score(query, doc_id)) for doc_id in candidates], key=lambda x: x[1],
                       reverse=True)[:min(N, self.index.corpus_size)]
@@ -421,14 +345,13 @@ class BM25QuerySearcher(QuerySearcher):
         score = 0.0
 
         for term in query:
-            if term in self.words:
-                term_frequencies = dict(self.pls[self.words.index(term)])
+            term_frequencies = dict(self.pls[self.words.index(term)])
 
-                if doc_id in term_frequencies.keys():
-                    freq = term_frequencies[doc_id]
-                    numerator = self.idf[term] * freq * (self.k1 + 1)
-                    denominator = freq + self.k1 * (1 - self.b + self.b * self.index.dl[doc_id] / self.index.avg_dl)
-                    score += (numerator / denominator)
+            if doc_id in term_frequencies.keys():
+                freq = term_frequencies[doc_id]
+                numerator = self.index.idf[term] * freq * (self.k1 + 1)
+                denominator = freq + self.k1 * (1 - self.b + self.b * self.index.dl[doc_id] / self.index.avg_dl)
+                score += (numerator / denominator)
 
         return score
 

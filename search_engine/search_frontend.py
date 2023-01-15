@@ -134,8 +134,7 @@ def search_body():
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
         docs_ranks = TfIdfQuerySearcher(body_index).search_query(query_tokens)
-        for item in docs_ranks:
-            res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
+        res = [(id, title_index.id_to_title.get(id, "")) for id in docs_ranks]
     # END SOLUTION
     return jsonify(res)
 
@@ -268,4 +267,4 @@ def get_pageview():
 
 if __name__ == '__main__':
     # run the Flask RESTful API, make the server publicly available (host='0.0.0.0') on port 8080
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=False)
