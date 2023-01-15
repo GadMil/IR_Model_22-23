@@ -196,6 +196,24 @@ class BinaryQuerySearcher(QuerySearcher):
 
         return sorted(out, key=out.get, reverse=True)
 
+
+    def search_query_with_score(self, query_to_search):
+        # tokens = word_tokenize(query.lower())
+        out = {}
+        for token in query_to_search:
+            try:
+                res = self.index.read_posting_list(token)
+                for doc_id, amount in res:
+                    try:
+                        out[doc_id] += 1
+                    except:
+                        out[doc_id] = 1
+            except Exception as e:
+                print("Index error, couldn't find term - ", e)
+
+        return out
+
+
     def get_candidate_documents_and_scores(self, query_to_search):
         candidates = {}
 
@@ -283,7 +301,7 @@ class BM25QuerySearcher(QuerySearcher):
         Inverse Document Frequency per term.
     """
 
-    def __init__(self, index, k1=1.5, b=0.75):
+    def __init__(self, index, k1=3, b=0.25):
         super().__init__(index)
         self.b = b
         self.k1 = k1
@@ -361,7 +379,7 @@ class BM25QuerySearcher(QuerySearcher):
         return score
 
 
-def merge_results(title_scores, body_scores, title_weight=0.3, text_weight=0.7, N=200):
+def merge_results(title_scores, body_scores, title_weight=0.31, text_weight=0.74, N=200):
     """
     This function merge and sort documents retrieved by its weighted score (e.g., title and body).
     Parameters:
@@ -398,7 +416,8 @@ def get_similar_words(term, model):
 
 
 def expand_query(tokens, model):
-    query = tokens
+    query = []
+    query.extend(tokens)
     for tok in tokens:
         similars = get_similar_words(tok, model)
         for w in similars:
