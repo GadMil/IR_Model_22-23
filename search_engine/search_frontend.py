@@ -1,9 +1,9 @@
-import pandas as pd
 from flask import Flask, request, jsonify
 import searcher
 from searcher import *
 import inverted_index_gcp
 import time
+import os
 
 from google.cloud import storage
 import gensim.downloader
@@ -111,8 +111,13 @@ def search():
     # END SOLUTION
     end = time.time()
     data = [[res, end-start]]
-    df = pd.dataframe(data, columns=["Results", "Time"])
-    pd.DataFrame.to_csv(df, f"C:\Users\gadmi\Desktop\University Files\Sem5\Information Retrieval\Project\Report\Results\{exp}")
+    df = pd.DataFrame(data, columns=["Results", "Time"])
+    filename = f'{exp}.csv'
+    out = os.path.join(os.getcwd(), 'Results')
+    if not os.path.exists(out):
+        os.mkdir(out)
+    fullname = os.path.join(out, filename)
+    df.to_csv(fullname)
     exp += 1
     return jsonify(res)
 
