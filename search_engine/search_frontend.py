@@ -1,9 +1,8 @@
-import os
-
 from flask import Flask, request, jsonify
 import searcher
 from searcher import *
 import inverted_index_gcp
+import time
 
 from google.cloud import storage
 import gensim.downloader
@@ -74,6 +73,7 @@ def search():
         list of up to 100 search results, ordered from best to worst where each
         element is a tuple (wiki_id, title).
     """
+    start = time.time()
     res = []
     query = request.args.get('query', '')
     if len(query) == 0:
@@ -86,8 +86,8 @@ def search():
         title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
         merged_ranks = merge_results(title_ranks, body_ranks)
         anchor_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
-        # page_views_scores = page_views.get_page_views(list(merged_ranks.keys()))
-        # page_ranks_scores = page_ranks.get_page_ranks(list(merged_ranks.keys()))
+        page_views_scores = page_views.get_page_views(list(merged_ranks.keys()))
+        page_ranks_scores = page_ranks.get_page_ranks(list(merged_ranks.keys()))
 
         doc_ranks = defaultdict(int)
         i = 0
@@ -101,8 +101,10 @@ def search():
                     :100]
 
         for item in doc_ranks:
-            res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
+            res.append((int(item[0])))
     # END SOLUTION
+    end = time.time()
+    print(end-start)
     return jsonify(res)
 
 

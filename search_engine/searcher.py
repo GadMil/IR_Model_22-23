@@ -390,5 +390,7 @@ def get_similar_words(term, model):
 def expand_query(tokens, model):
     query = tokens
     for tok in tokens:
-        query.append(get_similar_words(tok, model))
+        similars = get_similar_words(tok, model)
+        for w in similars:
+            query.append(w[0])
     return query
