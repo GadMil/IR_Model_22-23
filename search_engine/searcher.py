@@ -1,3 +1,4 @@
+import csv
 import math
 import pickle
 import re
@@ -43,21 +44,28 @@ class PageViews:
 class PageRanks:
 
     def __init__(self):
-        self._page_ranks = 'views_ranks/part-00000-562c3bda-ffab-4c73-944f-08aa804bf5db-c000.csv.gz'
-        self.prDF = None
+        self._page_ranks = 'views_ranks/part-00000-562c3bda-ffab-4c73-944f-08aa804bf5db-c000.csv'
+        self.prDict = None
 
     def read_page_ranks(self):
         # read in the rdd
         try:
-            with gzip.open(self._page_ranks, 'rb') as file:
-                self.prDF = pd.read_csv(file)
+            with open(self._page_ranks, 'r') as file:
+                reader = csv.reader(file)
+                data = list(reader)
+                self.prDict = dict([(int(i), float(j)) for i, j in data])
         except OSError:
-            return []
+            self.prDict = {}
 
     def get_page_ranks(self, wiki_ids: list) -> list:
-        relevant_ids = self.prDF[self.prDF[0].isin(wiki_ids)]
-        relevant_ids_rank = {row[1][0]: row[1][1] for row in relevant_ids.itterrows()}
-        return [relevant_ids_rank[wiki_id] if wiki_id in relevant_ids_rank else 0 for wiki_id in wiki_ids]
+        pageranks = []
+        for id in wiki_ids:
+            try:
+                pageranks.append(self.prDict[id])
+            except:
+                pageranks.append(0)
+        return pageranks
+
 
 
 class Tokenizer:

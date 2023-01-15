@@ -4,6 +4,7 @@ from searcher import *
 import inverted_index_gcp
 import time
 import os
+import requests
 
 from google.cloud import storage
 import gensim.downloader
@@ -57,6 +58,7 @@ page_views.read_page_views()
 page_ranks.read_page_ranks()
 
 word2vec_glove = gensim.downloader.load('glove-wiki-gigaword-50')
+
 
 @app.route("/search")
 def search():
