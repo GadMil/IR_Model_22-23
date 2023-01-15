@@ -146,7 +146,7 @@ def search_body():
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
         docs_ranks = TfIdfQuerySearcher(body_index).search_query(query_tokens)
-        res = [(id, title_index.id_to_title.get(id, "")) for id in docs_ranks]
+        res = [(item[0], title_index.id_to_title.get(item[0], "")) for item in docs_ranks]
     # END SOLUTION
     return jsonify(res)
 

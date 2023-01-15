@@ -149,9 +149,11 @@ def get_top_n(sim_dict, N=100):
     -----------
     a ranked list of pairs (doc_id, score) in the length of N.
     """
-
-    return sorted([doc_id for doc_id, score in sim_dict.items()], key=lambda x: x[1], reverse=True)[
-           :N]
+    try:
+        return sorted([(doc_id, score) for doc_id, score in sim_dict.items()], key=lambda x: x[1], reverse=True)[
+               :N]
+    except:
+        return []
 
 
 class QuerySearcher:
@@ -248,7 +250,7 @@ class TfIdfQuerySearcher(QuerySearcher):
             return get_top_n(sim_dict, N)
         heap = [(tfidf, doc_id) for doc_id, tfidf in sim_dict.items()]
         top_n = heapq.nlargest(N, heap)
-        return [doc_id for tfidf, doc_id in sorted(top_n, reverse=True)]
+        return [(doc_id, tfidf) for tfidf, doc_id in sorted(top_n, reverse=True)]
 
 
 class BM25QuerySearcher(QuerySearcher):
