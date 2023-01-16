@@ -33,3 +33,4 @@ We evaluated our results with:
 * Average precision at k
 * Recall
 * Map at 40
+* Retrieval time
