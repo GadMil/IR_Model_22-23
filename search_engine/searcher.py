@@ -90,17 +90,14 @@ class PageRanks:
                 pageranks.append(0)
         return pageranks
 
-    def get_page_ranks_with_id(self, N=200):
+    def get_page_ranks_with_id(self):
         """
         Gets the wikipedia articles with the maximum page rank score.
-        Parameters:
-        -----------
-        N: the number of results to return.
         Returns:
         -----------
         list of (wiki_id, rank) for the top page ranks, normalized by the maximum page rank.
         """
-        top_ranks = sorted(self.prDict.items(), key=lambda x: x[1], reverse=True)[:N]
+        top_ranks = sorted(self.prDict.items(), key=lambda x: x[1], reverse=True)
         max_pr = top_ranks[0][1]
         return [(pr[0], pr[1] / max_pr) for pr in top_ranks]
 
@@ -248,7 +245,7 @@ class TfIdfQuerySearcher(QuerySearcher):
         queries_to_search: a dictionary of queries as follows:
                                                             key: query_id
                                                             value: list of tokens.
-        index:           inverted index loaded from the corresponding files.
+        index: inverted index loaded from the corresponding files.
         N: Integer. How many documents to retrieve. This argument is passed to the topN function. By default, N = 3.
 
         Returns:
@@ -406,6 +403,6 @@ def merge_results(title_scores, body_scores, anchor_scores, title_weight=0.8, te
         if merged_scores.get(doc):
             merged_scores[doc] += score * anchor_weight
         else:
-            merged_scores[doc] = score * anchor_weight
+            pass
 
     return sorted(merged_scores.items(), key=lambda x: x[1], reverse=True)[:min(N, len(merged_scores))]
