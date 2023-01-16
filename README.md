@@ -1,5 +1,5 @@
 # IR_Model_22-23
-# IR-Wikipedia-Search-Engine
+## IR-Wikipedia-Search-Engine
 # Creators 
 Shaked Ben Aharon & Gad Michael Miller
 # Summary
