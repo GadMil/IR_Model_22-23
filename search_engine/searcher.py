@@ -100,9 +100,9 @@ class PageRanks:
         -----------
         list of page ranks in the same order as the ids received.
         """
-        top_ranks = sorted(self.prDict, key=lambda x: x[1], reverse=True)[:N]
+        top_ranks = sorted(self.prDict.items(), key=lambda x: x[1], reverse=True)[:N]
         max_pr = top_ranks[0][1]
-        return {pr[0]: pr[1] / max_pr for pr in top_ranks}
+        return [(pr[0], pr[1] / max_pr) for pr in top_ranks]
 
 
 class Tokenizer:
@@ -416,7 +416,7 @@ class BM25QuerySearcher(QuerySearcher):
         return score
 
 
-def merge_results(title_scores, body_scores, anchor_scores, title_weight=0.8, text_weight=0.2, anchor_weight=0.2, N=200):
+def merge_results(title_scores, body_scores, anchor_scores, title_weight=0.8, text_weight=0.2, anchor_weight=0.4, N=200):
     """
     This function merge and sort documents retrieved by its weighted score (e.g., title and body).
     Parameters:
@@ -459,11 +459,13 @@ def merge_results(title_scores, body_scores, anchor_scores, title_weight=0.8, te
 
 
 def expand_query(tokens, model, index):
-    query = {}
+    query = []
+    query.extend(tokens)
+    add_to_query = {}
     for tok in tokens:
-        query[tok] = index.term_total[tok]
-    query = sorted(query.keys())[:3]
-    for term in query:
+        add_to_query[tok] = index.term_total.get(tok, 0)
+    add_to_query = sorted([t for t, s in add_to_query.items()], key=lambda x: x[1])[:3]
+    for term in add_to_query:
         similars = [w for w, s in model.most_similar(term) if s > 0.8]
         query.extend(similars)
 
