@@ -22,11 +22,11 @@ Each index stores:
  and more data that will simplify later calculation.
 # Search
 For each component we used different search method:
-* Title search -> Binary search method returning all relevant results.
-* Anchor search -> Binary search method returning all relevant results.
-* Body search -> terms are weighted with tf-idf and similarity is measured by cosine similarity function returning 30 relevant results.
+* Title search - Binary search method returning all relevant results.
+* Anchor search - Binary search method returning all relevant results.
+* Body search - terms are weighted with tf-idf and similarity is measured by cosine similarity function returning 30 relevant results.
 * We also support getting the articles' page rank and page views by their id (data is stored in advanced to make calculation fast).
-* Main search action -> BM25 score on the body index is merged with Binary search on the title index and page ranks.
+* Main search action - BM25 score on the body index is merged with Binary search on the title index and page ranks.
 # Evaluation
 We evaluated our results with:
 * Average precision at k
