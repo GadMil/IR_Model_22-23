@@ -19,7 +19,7 @@ Each index stores:
 * Average document's length
 * The corpus's size
 * The dictionary's size
- and more data that will simplify later calculation.
+and more data that will simplify later calculation.
 # Search
 For each component we used different search method:
 * Title search - Binary search method returning all relevant results.
