@@ -57,7 +57,7 @@ class PageRanks:
         except OSError:
             self.prDict = {}
 
-    def get_page_ranks(self, wiki_ids: list) -> list:
+    def get_page_ranks(self, wiki_ids):
         pageranks = []
         for id in wiki_ids:
             try:
@@ -66,6 +66,8 @@ class PageRanks:
                 pageranks.append(0)
         return pageranks
 
+    def get_page_ranks_with_id(self, N=200):
+        return sorted(self.prDict, key=lambda x: x[1], reverse=True)[:N]
 
 
 class Tokenizer:
@@ -379,7 +381,7 @@ class BM25QuerySearcher(QuerySearcher):
         return score
 
 
-def merge_results(title_scores, anchor_scores, body_scores, title_weight=0.8, anchor_weight=0.0, text_weight=0.2, N=200):
+def merge_results(title_scores, body_scores, anchor_scores, title_weight=0.8, text_weight=0.2, anchor_weight=0.2, N=200):
     """
     This function merge and sort documents retrieved by its weighted score (e.g., title and body).
     Parameters:
@@ -412,21 +414,29 @@ def merge_results(title_scores, anchor_scores, body_scores, title_weight=0.8, an
 
     return sorted(merged_scores.items(), key=lambda x: x[1], reverse=True)[:min(N, len(merged_scores))]
 
-
-def get_similar_words(term, model):
-    try:
-        similars = model.most_similar(term, topn=3)
-    except:
-        similars = []
-    return similars
+#
+# def get_similar_words(term, model):
+#     try:
+#         similars = model.most_similar(term, topn=3)
+#     except:
+#         similars = []
+#     return similars
 
 
 def expand_query(tokens, model, index):
-    query = []
-    query.extend(tokens)
+    query = {}
     for tok in tokens:
-        if index.term_total[tok] < 2:
-            similars = get_similar_words(tok, model)
-            for w in similars:
-                query.append(w[0])
+        query[tok] = index.term_total[tok]
+    query = sorted(query.keys())[:3]
+    for term in query:
+        similars = [w for w, s in model.most_similar(term) if s > 0.8]
+        query.extend(similars)
+
+    # query = []
+    # query.extend(tokens)
+    # for tok in tokens:
+    #     if index.term_total[tok] < 2:
+    #         similars = get_similar_words(tok, model)
+    #         for w in similars:
+    #             query.append(w[0])
     return query

@@ -85,12 +85,13 @@ def search():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        # query_tokens = expand_query(query_tokens, word2vec_glove, title_index)
+        query_tokens = expand_query(query_tokens, word2vec_glove, body_index)  # TODO: title?
         body_ranks = BM25QuerySearcher(body_index).search_query(query_tokens)
         # title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
         title_ranks = BinaryQuerySearcher(title_index).search_query_with_score(query_tokens)
-        anchor_ranks = BM25QuerySearcher(anchor_index).search_query(query_tokens)
-        merged_ranks = merge_results(title_ranks, body_ranks, anchor_ranks)
+        # anchor_ranks = BM25QuerySearcher(anchor_index).search_query(query_tokens)
+        page_ranks_scores = get_page_ranks_with_id()  # TODO: pagerank?
+        merged_ranks = merge_results(title_ranks, body_ranks, page_ranks_scores)[:30]  # TODO: 40?
         for item in merged_ranks:
             res.append((int(item[0])))
     # END SOLUTION
