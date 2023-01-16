@@ -98,7 +98,7 @@ class PageRanks:
         N: the number of results to return.
         Returns:
         -----------
-        list of page ranks in the same order as the ids received.
+        list of (wiki_id, rank) for the top page ranks, normalized by the maximum page rank.
         """
         top_ranks = sorted(self.prDict.items(), key=lambda x: x[1], reverse=True)[:N]
         max_pr = top_ranks[0][1]
@@ -106,6 +106,9 @@ class PageRanks:
 
 
 class Tokenizer:
+    """
+    Stores the tokenization functionality of query's terms.
+    """
     def __init__(self):
         self.english_stopwords = frozenset(stopwords.words('english'))
         self.corpus_stopwords = ["category", "references", "also", "external", "links",
@@ -136,47 +139,6 @@ class Tokenizer:
         return list_of_tokens
 
 
-def get_posting_iter(index, query):
-    """
-    This function returning the iterator working with posting list.
-
-    Parameters:
-    ----------
-    index: inverted index
-    """
-    words, pls = zip(*index.posting_lists_iter(query))
-    return words, pls
-
-
-def cosine_similarity(index, D, Q):
-    """
-    Calculate the cosine similarity for each candidate document in D and a given query (e.g., Q).
-    Generate a dictionary of cosine similarity scores
-    key: doc_id
-    value: cosine similarity score
-
-    Parameters:
-    -----------
-    D: DataFrame of tfidf scores.
-
-    Q: vectorized query with tfidf scores
-
-    Returns:
-    -----------
-    dictionary of cosine similarity score as follows:
-                                                                key: document id (e.g., doc_id)
-                                                                value: cosine similarly score.
-    """
-    # YOUR CODE HERE
-    result = {}
-
-    for doc_id, scores in D.iterrows():
-        s = np.array(scores)
-        result[doc_id] = np.dot(s, Q) / (index.doc_norm[doc_id] * np.linalg.norm(Q))
-
-    return result
-
-
 def get_top_n(sim_dict, N=100):
     """
     Sort and return the highest N documents according to the cosine similarity score.
@@ -202,10 +164,11 @@ def get_top_n(sim_dict, N=100):
 
 
 class QuerySearcher:
+    """
+    abstract class for all searching models to inherit.
+    """
     def __init__(self, index: InvertedIndex):
         self.index = index
-        # self.words, self.pls = get_posting_iter(index, query)
-        self.words, self.pls = None, None
 
     @abstractmethod
     def search_query(self, query_to_search):
@@ -213,12 +176,22 @@ class QuerySearcher:
 
 
 class BinaryQuerySearcher(QuerySearcher):
-
+    """
+    Stores the functionality of binary search for a query.
+    """
     def __init__(self, index):
         super().__init__(index)
 
     def search_query(self, query_to_search):
-        # tokens = word_tokenize(query.lower())
+        """
+        Search for relevant wikipedia articles for a given query.
+        Parameters:
+        -----------
+        query_to_search: list of string, for the tokenized query.
+        Returns:
+        -----------
+        The relevant wikipedia articles as a sorted list of ids.
+        """
         out = {}
         for token in query_to_search:
             try:
@@ -235,7 +208,15 @@ class BinaryQuerySearcher(QuerySearcher):
 
 
     def search_query_with_score(self, query_to_search):
-        # tokens = word_tokenize(query.lower())
+        """
+        Search for relevant wikipedia articles for a given query.
+        Parameters:
+        -----------
+        query_to_search: list of string, for the tokenized query.
+        Returns:
+        -----------
+        The relevant wikipedia articles as a sorted list of pairs (doc_id, score).
+        """
         out = {}
         for token in query_to_search:
             try:
@@ -251,21 +232,10 @@ class BinaryQuerySearcher(QuerySearcher):
         return get_top_n(out, 200)
 
 
-    def get_candidate_documents_and_scores(self, query_to_search):
-        candidates = {}
-
-        for term in np.unique(query_to_search):
-            if term in self.words:
-                for doc_id, tf in self.pls[self.words.index(term)]:
-                    if candidates.get(doc_id):
-                        candidates[doc_id] += 1
-                    else:
-                        candidates[doc_id] = 1
-
-        return candidates
-
-
 class TfIdfQuerySearcher(QuerySearcher):
+    """
+    Stores the functionality of tfidf with cosine similarity search for a query.
+    """
     def __init__(self, index):
         super().__init__(index)
 
@@ -291,29 +261,31 @@ class TfIdfQuerySearcher(QuerySearcher):
         q_vector = []
         q_size = len(query_to_search)
         sim_dict = {}
-        counter = Counter(query_to_search)
+        query_tf = Counter(query_to_search)
 
-        for token, count in counter.items():
-            if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
-                q_vector.append(count * self.index.idf[token] / q_size)
+        for token, q_tf in query_tf.items():
+            if token in self.index.term_total.keys():
+                q_vector.append(q_tf * self.index.idf[token] / q_size)
                 for doc_id, doc_tf in self.index.read_posting_list(token):
-                    if doc_id == 0:
-                        continue
-                    tfidf = doc_tf * self.index.idf[token]
-                    if doc_id in sim_dict.keys():
-                        sim_dict[doc_id] += count * tfidf
-                    else:
-                        sim_dict[doc_id] = count * tfidf
+                    if doc_id != 0:
+                        tfidf = doc_tf * self.index.idf[token]
+                        if doc_id in sim_dict.keys():
+                            sim_dict[doc_id] += q_tf * tfidf
+                        else:
+                            sim_dict[doc_id] = q_tf * tfidf
 
         for doc_id in sim_dict.keys():
-            sim_dict[doc_id] = sim_dict[doc_id] * (1/(self.index.doc_norm[doc_id] * np.linalg.norm(q_vector))) *\
-                               (1/self.index.dl[doc_id])
+            sim_dict[doc_id] = sim_dict[doc_id] / (self.index.doc_norm[doc_id] * np.linalg.norm(q_vector)) \
+                               / self.index.dl[doc_id]
 
-        if len(sim_dict) < N:
-            return get_top_n(sim_dict, N)
-        heap = [(tfidf, doc_id) for doc_id, tfidf in sim_dict.items()]
-        top_n = heapq.nlargest(N, heap)
-        return [(doc_id, tfidf) for tfidf, doc_id in sorted(top_n, reverse=True)]
+        if len(sim_dict) >= N:
+            heap = [(tfidf, doc_id) for doc_id, tfidf in sim_dict.items()]
+            top_n = heapq.nlargest(N, heap)
+            result = [(doc_id, tfidf) for tfidf, doc_id in sorted(top_n, reverse=True)]
+        else:
+            result = get_top_n(sim_dict, N)
+
+        return result
 
 
 class BM25QuerySearcher(QuerySearcher):
@@ -343,22 +315,6 @@ class BM25QuerySearcher(QuerySearcher):
         self.b = b
         self.k1 = k1
 
-
-    # def calc_idf(self, query):
-    #     """
-    #     This function calculate the idf values according to the BM25 idf formula for each term in the query.
-    #     Parameters:
-    #     -----------
-    #     query: list of token representing the query.
-    #     """
-    #     # YOUR CODE HERE
-    #     for term in query:
-    #         if term not in self.idf and self.index.df.get(term):
-    #             freq = self.index.df[term]
-    #             self.idf[term] = math.log((self.index.corpus_size - freq + 0.5) / (freq + 0.5))
-    #         else:
-    #             pass
-
     def search_query(self, query, N=200):
         """
          This function calculate the bm25 score for given query and document.
@@ -378,24 +334,27 @@ class BM25QuerySearcher(QuerySearcher):
         q_vector = []
         q_size = len(query)
         sim_dict = {}
-        counter = Counter(query)
+        query_tf = Counter(query)
 
-        for token, count in counter.items():
-            if token in self.index.term_total.keys():  # avoid terms that do not appear in the index.
-                q_vector.append(count * self.index.idf[token] / q_size)
+        for token, q_tf in query_tf.items():
+            if token in self.index.term_total.keys():
+                q_vector.append(q_tf * self.index.idf[token] / q_size)
                 for doc_id, doc_tf in self.index.read_posting_list(token):
                     if doc_id == 0:
                         continue
                     if doc_id in sim_dict.keys():
-                        sim_dict[doc_id] += self._score(token, count, doc_id)
+                        sim_dict[doc_id] += self._score(token, q_tf, doc_id)
                     else:
-                        sim_dict[doc_id] = self._score(token, count, doc_id)
+                        sim_dict[doc_id] = self._score(token, q_tf, doc_id)
 
-        if len(sim_dict) < N:
-            return get_top_n(sim_dict, N)
-        heap = [(bm25, doc_id) for doc_id, bm25 in sim_dict.items()]
-        top_n = heapq.nlargest(N, heap)
-        return [(doc_id, bm25) for bm25, doc_id in sorted(top_n, reverse=True)]
+        if len(sim_dict) >= N:
+            heap = [(bm25, doc_id) for doc_id, bm25 in sim_dict.items()]
+            top_n = heapq.nlargest(N, heap)
+            result = [(doc_id, bm25) for bm25, doc_id in sorted(top_n, reverse=True)]
+        else:
+            result = get_top_n(sim_dict, N)
+
+        return result
 
     def _score(self, term, tf, doc_id):
         """
@@ -422,9 +381,11 @@ def merge_results(title_scores, body_scores, anchor_scores, title_weight=0.8, te
     Parameters:
     -----------
     title_scores: a list of pairs in the following format: (doc_id,score) build upon the title index.
-    body_scores: a dictionary list of pairs in the following format: (doc_id,score) build upon the body/text index.
-    title_weight: float, for weighted average utilizing title and body scores
-    text_weight: float, for weighted average utilizing title and body scores
+    body_scores: a dictionary list of pairs in the following format: (doc_id,score) build upon the title/text index.
+    anchor_scores: a dictionary list of pairs in the following format: (doc_id,score) build upon the anchor/text index.
+    title_weight: float, for weighted average utilizing body scores
+    text_weight: float, for weighted average utilizing title scores
+    anchor_weight: float, for weighted average utilizing anchor scores
     N: Integer. How many document to retrieve. This argument is passed to topN function. By default N = 3.
     Returns:
     -----------
@@ -448,32 +409,3 @@ def merge_results(title_scores, body_scores, anchor_scores, title_weight=0.8, te
             merged_scores[doc] = score * anchor_weight
 
     return sorted(merged_scores.items(), key=lambda x: x[1], reverse=True)[:min(N, len(merged_scores))]
-
-#
-# def get_similar_words(term, model):
-#     try:
-#         similars = model.most_similar(term, topn=3)
-#     except:
-#         similars = []
-#     return similars
-
-
-def expand_query(tokens, model, index):
-    query = []
-    query.extend(tokens)
-    add_to_query = {}
-    for tok in tokens:
-        add_to_query[tok] = index.term_total.get(tok, 0)
-    add_to_query = sorted([t for t, s in add_to_query.items()], key=lambda x: x[1])[:3]
-    for term in add_to_query:
-        similars = [w for w, s in model.most_similar(term) if s > 0.8]
-        query.extend(similars)
-
-    # query = []
-    # query.extend(tokens)
-    # for tok in tokens:
-    #     if index.term_total[tok] < 2:
-    #         similars = get_similar_words(tok, model)
-    #         for w in similars:
-    #             query.append(w[0])
-    return query

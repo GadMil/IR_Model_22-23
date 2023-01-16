@@ -3,8 +3,6 @@ import searcher
 from searcher import *
 import inverted_index_gcp
 import time
-import os
-import requests
 
 from google.cloud import storage
 import gensim.downloader
@@ -85,11 +83,8 @@ def search():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        # query_tokens = expand_query(query_tokens, word2vec_glove, body_index)
         body_ranks = BM25QuerySearcher(body_index).search_query(query_tokens)
-        # title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
         title_ranks = BinaryQuerySearcher(title_index).search_query_with_score(query_tokens)
-        # anchor_ranks = BM25QuerySearcher(anchor_index).search_query(query_tokens)
         page_ranks_scores = page_ranks.get_page_ranks_with_id()
         merged_ranks = merge_results(title_ranks, body_ranks, page_ranks_scores)[:30]
         for item in merged_ranks:
@@ -157,8 +152,6 @@ def search_title():
     if query_tokens:
         docs_ranks = BinaryQuerySearcher(title_index).search_query(query_tokens)
         res = [(id, title_index.id_to_title.get(id, "")) for id in docs_ranks]
-        # for item in docs_ranks:
-        #     res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 
@@ -193,8 +186,6 @@ def search_anchor():
     if query_tokens:
         docs_ranks = BinaryQuerySearcher(anchor_index).search_query(query_tokens)
         res = [(id, title_index.id_to_title.get(id, "")) for id in docs_ranks]
-        # for item in docs_ranks:
-        #     res.append((int(item[0]), title_index.id_to_title.get(item[0], "")))
     # END SOLUTION
     return jsonify(res)
 
