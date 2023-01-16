@@ -211,7 +211,7 @@ class BinaryQuerySearcher(QuerySearcher):
             except Exception as e:
                 print("Index error, couldn't find term - ", e)
 
-        return out
+        return get_top_n(out, 200)
 
 
     def get_candidate_documents_and_scores(self, query_to_search):
@@ -379,7 +379,7 @@ class BM25QuerySearcher(QuerySearcher):
         return score
 
 
-def merge_results(title_scores, anchor_scores, body_scores, title_weight=0.7, anchor_weight=0.3, text_weight=0.3, N=200):
+def merge_results(title_scores, anchor_scores, body_scores, title_weight=0.8, anchor_weight=0.0, text_weight=0.2, N=200):
     """
     This function merge and sort documents retrieved by its weighted score (e.g., title and body).
     Parameters:

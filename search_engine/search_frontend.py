@@ -24,8 +24,6 @@ class MyFlaskApp(Flask):
 app = MyFlaskApp(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
-exp = 1
-
 
 def read_global_page_views(file_name):
     blob = storage.Blob(f'{file_name}.pkl', bucket)
@@ -87,39 +85,15 @@ def search():
     # BEGIN SOLUTION
     query_tokens = tokenizer.tokenize(query)
     if query_tokens:
-        query_tokens = expand_query(query_tokens, word2vec_glove, title_index)
+        # query_tokens = expand_query(query_tokens, word2vec_glove, title_index)
         body_ranks = BM25QuerySearcher(body_index).search_query(query_tokens)
-        title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
+        # title_ranks = BM25QuerySearcher(title_index).search_query(query_tokens)
+        title_ranks = BinaryQuerySearcher(title_index).search_query_with_score(query_tokens)
         anchor_ranks = BM25QuerySearcher(anchor_index).search_query(query_tokens)
         merged_ranks = merge_results(title_ranks, body_ranks, anchor_ranks)
         for item in merged_ranks:
             res.append((int(item[0])))
-
-        # anchor_ranks = BinaryQuerySearcher(anchor_index).search_query_with_score(query_tokens)
-        #
-        # doc_ranks = defaultdict(int)
-        # for doc_id, bm25Rank in merged_ranks:
-        #     page_view = page_views.pvCounter.get(doc_id, 1)
-        #     doc_ranks[doc_id] += (2 * bm25Rank * page_view) / (bm25Rank + page_view)
-        # for doc_id in merged_ranks:
-        #     doc_ranks[doc_id] *= 3 * anchor_ranks.get(doc_id, 1)
-        #
-        # doc_ranks = sorted([(doc_id, rank) for doc_id, rank in doc_ranks.items()], key=lambda x: x[1], reverse=True)[
-        #             :100]
-        #
-        # for item in doc_ranks:
-        #     res.append((int(item[0])))
     # END SOLUTION
-    end = time.time()
-    data = [[res, end-start]]
-    df = pd.DataFrame(data, columns=["Results", "Time"])
-    filename = f'{exp}.csv'
-    out = os.path.join(os.getcwd(), 'Results')
-    if not os.path.exists(out):
-        os.mkdir(out)
-    fullname = os.path.join(out, filename)
-    df.to_csv(fullname)
-    exp += 1
     return jsonify(res)
 
 
