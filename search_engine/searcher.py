@@ -1,17 +1,14 @@
 import csv
-import math
 import pickle
 import re
 from abc import abstractmethod
-from collections import Counter, defaultdict
+from collections import Counter
 
 import nltk
-import pandas as pd
 import numpy as np
 from nltk.corpus import stopwords
 import hashlib
 import heapq
-import gzip
 
 from inverted_index_gcp import InvertedIndex
 
@@ -24,31 +21,49 @@ nltk.download('stopwords')
 
 
 class PageViews:
-
+    """
+    Stores a dictionary with the page views of wikipedia articles.
+    """
     def __init__(self):
         self._page_views = 'views_ranks/pageviews-202108-user.pkl'
         self.pvCounter = {}
 
     def read_page_views(self):
+        """
+        Reads the page views file.
+        """
         # read in the counter
         try:
             with open(self._page_views, 'rb') as file:
                 self.pvCounter = pickle.loads(file.read())
         except OSError:
-            return []
+            self.pvCounter = Counter()
 
-    def get_page_views(self, wiki_ids: list) -> list:
+    def get_page_views(self, wiki_ids):
+        """
+        Gets the page views of wikipedia articles.
+        Parameters:
+        -----------
+        wiki_ids: list of wikipedia article's ids.
+        Returns:
+        -----------
+        list of page views in the same order as the ids received.
+        """
         return [self.pvCounter[wiki_id] if wiki_id in self.pvCounter else 0 for wiki_id in wiki_ids]
 
 
 class PageRanks:
-
+    """
+    Stores a dictionary with the page ranks of wikipedia articles.
+    """
     def __init__(self):
         self._page_ranks = 'views_ranks/part-00000-562c3bda-ffab-4c73-944f-08aa804bf5db-c000.csv'
         self.prDict = None
 
     def read_page_ranks(self):
-        # read in the rdd
+        """
+        Reads the page ranks file.
+        """
         try:
             with open(self._page_ranks, 'r') as file:
                 reader = csv.reader(file)
@@ -58,6 +73,15 @@ class PageRanks:
             self.prDict = {}
 
     def get_page_ranks(self, wiki_ids):
+        """
+        Gets the page ranks of wikipedia articles.
+        Parameters:
+        -----------
+        wiki_ids: list of wikipedia article's ids.
+        Returns:
+        -----------
+        list of page ranks in the same order as the ids received.
+        """
         pageranks = []
         for id in wiki_ids:
             try:
@@ -67,7 +91,18 @@ class PageRanks:
         return pageranks
 
     def get_page_ranks_with_id(self, N=200):
-        return sorted(self.prDict, key=lambda x: x[1], reverse=True)[:N]
+        """
+        Gets the wikipedia articles with the maximum page rank score.
+        Parameters:
+        -----------
+        N: the number of results to return.
+        Returns:
+        -----------
+        list of page ranks in the same order as the ids received.
+        """
+        top_ranks = sorted(self.prDict, key=lambda x: x[1], reverse=True)[:N]
+        max_pr = top_ranks[0][1]
+        return {pr[0]: pr[1] / max_pr for pr in top_ranks}
 
 
 class Tokenizer:
@@ -88,7 +123,7 @@ class Tokenizer:
 
     def tokenize(self, text):
         """
-        This function aims in tokenize a text into a list of tokens. Moreover, it filter stopwords.
+        This function aims in tokenize a text into a list of tokens. Moreover, it filters stopwords.
         Parameters:
         -----------
             text: string , representing the text to tokenize.
